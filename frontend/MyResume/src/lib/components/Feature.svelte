@@ -43,4 +43,33 @@
         flex-direction: row;
         gap: 42px;
     }
+
+
+    @media(max-width: 900px){
+        .cards_container{
+            flex-direction: column;
+    }
+    .first_h{
+        margin: 18px 0 0 0;
+        font-size: 27px;
+
+    }
+
+    .second_h{
+        font-size: 22px;
+    }
+    }   
+         @media(max-width: 475px){
+
+    .first_h{
+        margin: 18px 0 0 0;
+        font-size: 25px;
+
+    }
+
+    .second_h{
+        font-size: 20px;
+    }
+    } 
+    
 </style>

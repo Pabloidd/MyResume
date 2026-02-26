@@ -54,10 +54,120 @@
             border-radius: 9999px;
             font-size: 22px;
             white-space: nowrap ;
+            transition: 0.25s;
+        }
+
+        .button:hover{
+            transform: scale(1.05);
         }
         
         .arrow_img{
             max-height: 20px;
             max-width: 20px;
+        }
+
+        @media (max-width: 1080px){
+            h1{
+            margin: 25px 152px 80px;
+            color: rgba(29, 53, 87, 1);
+            font-weight: bold;
+            font-size: 50px;
+        }
+        .h{
+            margin: -75px 152px 80px;
+            color: rgba(102, 155, 188, 1);
+            font-weight: bold;
+            font-size: 50px;
+        }
+
+        h2{
+            margin: -50px 152px 80px;
+            color: rgba(29, 53, 87, 0.7);
+            font-size: 25px;
+            font-weight: lighter;
+        }
+        .button{
+            margin: -40px 150px 60px;
+            padding: 25px 35px 25px 35px;
+            max-width: 350px;
+            max-height: 46px;
+            font-size: 17px;
+        }
+        }
+        @media (max-width: 900px){
+            h1{
+            margin: 25px 102px 80px;
+            color: rgba(29, 53, 87, 1);
+            font-weight: bold;
+            font-size: 35px;
+        }
+        .h{
+            margin: -75px 122px 80px;
+            color: rgba(102, 155, 188, 1);
+            font-weight: bold;
+            font-size: 35px;
+        }
+
+        h2{
+            margin: -50px 122px 80px;
+            color: rgba(29, 53, 87, 0.7);
+            font-size: 22px;
+            font-weight: lighter;
+        }
+        .button{
+            margin: -50px 122px 80px;
+            max-width: 350px;
+            max-height: 46px;
+            font-size: 17px;
+        }
+        }
+        @media (max-width: 650px){
+            h1{
+            margin: 25px 52px 80px;
+            font-size: 27px;
+        }
+        .h{
+            margin: -75px 52px 80px;
+            font-size: 27px;
+        }
+
+        h2{
+            margin: -70px 52px 80px;
+            color: rgba(29, 53, 87, 0.7);
+            font-size: 20px;
+            font-weight: lighter;
+        }
+        .button{
+            margin: -50px 52px 35px;
+            padding: 15px 25px 15px 25px;
+            max-width: 250px;
+            max-height: 46px;
+            font-size: 14px;
+        }
+        }
+        @media (max-width: 475px){
+            h1{
+            margin: 25px 52px 80px;
+            color: rgba(29, 53, 87, 1);
+            font-weight: bold;
+            font-size: 25px;
+        }
+        .h{
+            margin: -75px 52px 80px;
+            color: rgba(102, 155, 188, 1);
+            font-weight: bold;
+            font-size: 25px;
+        }
+
+        h2{
+            margin: -75px 52px 80px;
+            font-size: 18px;
+        }
+        .button{
+            margin: -60px 52px 25px;
+            padding: 5px 5px 5px 5px;
+            max-height: 25px;
+            font-size: 14px;
+        }
         }
     </style>

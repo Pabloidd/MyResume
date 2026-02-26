@@ -17,4 +17,10 @@
         font-size: 20px;
         white-space: nowrap;    /*запрет переноса, убрать для мабилок*/
     }
+
+    @media(max-width: 475px){
+        .footer_text{
+            font-size: 15px;
+        }
+    }
 </style>
