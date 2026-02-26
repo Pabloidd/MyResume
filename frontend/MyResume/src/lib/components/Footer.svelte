@@ -9,7 +9,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        background-color: rgba(255, 255, 255, 1);
+        background-color: rgba(102, 155, 188, 0.55);
     }
     .footer_text{
         

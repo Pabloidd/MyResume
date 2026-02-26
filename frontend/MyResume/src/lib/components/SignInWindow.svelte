@@ -1,8 +1,8 @@
 <script>
     import { goto } from "$app/navigation";
 
-    function goToRegistration(){
-        goto('/registration')
+    function goToProfile(){
+      goto('/profile')
     }
 </script>
 
@@ -35,7 +35,7 @@
       <a href="/SignIn/restorePassword" class="forgot-link">ЗАБЫЛИ ПАРОЛЬ?</a>
     </div>
     
-    <button type="submit" class="submit-btn">
+    <button type="button" on:click={goToProfile} class="submit-btn">
       ВОЙТИ
     </button>
   </form>

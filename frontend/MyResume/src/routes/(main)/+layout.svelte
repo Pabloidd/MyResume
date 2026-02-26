@@ -30,6 +30,11 @@
         box-shadow: 0 0  25px 0px rgba(29, 53, 87, 0.4);
     }
 
+    main{
+        background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(102, 155, 188, 1) 750%);
+        padding: 1rem 5rem;
+    }
+
     @media (max-width: 1500px){
         :global(body.main-layout){
         max-width: 1240px;
@@ -56,6 +61,9 @@
     @media (max-width: 650px){
         :global(body.main-layout){
         max-width: 440px;
+        }
+        main{
+            padding: 1rem 1.25rem;
         }
     }
     @media (max-width: 475px){
