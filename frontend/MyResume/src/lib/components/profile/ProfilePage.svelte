@@ -1,12 +1,21 @@
 <script>
+    import { goto } from '$app/navigation';
   import ResumeRow from './ResumeRow.svelte';
+
+  function goToCreate(){
+    goto('/profile/create');
+  }
+
+  function goToPremium(){
+    goto('/profile/premium/')
+  }
 </script>
 
 <!-- Заголовок и приветствие -->
 <div class="page-header">
   <div class="header-top">
     <h1 class="page-title">Личный кабинет</h1>
-    <button class="create-resume-btn">Создать резюме</button>
+    <button on:click={goToCreate} class="create-resume-btn">Создать резюме</button>
   </div>
   <p class="welcome-message">ДОБРО ПОЖАЛОВАТЬ!</p>
 </div>
@@ -34,7 +43,7 @@
   
   <!-- Повысить статус -->
   <div class="info-row">
-    <button class="action-link upgrade-status">Повысить статус</button>
+    <button on:click={goToPremium} class="action-link upgrade-status">Повысить статус</button>
   </div>
 </div>
 
