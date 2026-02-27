@@ -1,0 +1,8 @@
+<svg viewBox="0 0 29 27" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="29.000000" height="27.000000" fill="none">
+	<rect id="svg" width="29.000000" height="27.000000" x="0.000000" y="0.000000" />
+	<path id="19261" d="M10.875 23.625L6.04167 23.625C5.61745 23.625 5.20071 23.521 4.83333 23.3236C4.46595 23.1261 4.16088 22.842 3.94877 22.5C3.73667 22.158 3.625 21.77 3.625 21.375L3.625 5.625C3.625 5.23004 3.73667 4.84204 3.94877 4.5C4.16088 4.15796 4.46595 3.87392 4.83333 3.67644C5.20071 3.47896 5.61745 3.375 6.04167 3.375L10.875 3.375" fill-rule="nonzero" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.333333" />
+	<path id="19262" d="M19.3334 19.125L25.375 13.5L19.3334 7.875" fill-rule="nonzero" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.333333" />
+	<line id="19263" x1="0" x2="14.5" y1="0" y2="0" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.333333" transform="matrix(-1,0,0,-1,25.375,13.5)" />
+	<rect id="path.[object SVGAnimatedString]" width="4.000000" height="12.000000" x="2.000000" y="2.000000" />
+	<rect id="polyline.[object SVGAnimatedString]" width="3.330000" height="7.000000" x="10.000000" y="5.000000" />
+</svg>

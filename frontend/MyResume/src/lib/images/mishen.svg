@@ -1,0 +1,20 @@
+<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="56.000000" height="56.000000" fill="none" customFrame="url(#clipPath_2)">
+	<defs>
+		<clipPath id="clipPath_2">
+			<rect width="56.000000" height="56.000000" x="0.000000" y="0.000000" rx="12.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		<clipPath id="clipPath_3">
+			<rect width="28.000000" height="28.000000" x="14.000000" y="14.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="div.w-14 h-14 bg-[#669BBC] rounded-xl flex items-center justify-center text-white mb-6" width="56.000000" height="56.000000" x="0.000000" y="0.000000" rx="12.000000" fill="rgb(102,155,188)" />
+	<g id="svg" clip-path="url(#clipPath_3)" customFrame="url(#clipPath_3)">
+		<rect id="svg" width="28.000000" height="28.000000" x="14.000000" y="14.000000" />
+		<circle id="13103" cx="28.0001621" cy="27.999918" r="11.666666" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.333333" />
+		<circle id="13104" cx="28" cy="28" r="7" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.333333" />
+		<circle id="13105" cx="27.9998379" cy="28.000082" r="2.33333325" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.333333" />
+		<rect id="circle.[object SVGAnimatedString]" width="23.330000" height="23.000000" x="16.000000" y="16.000000" />
+		<rect id="circle.[object SVGAnimatedString]" width="14.000000" height="14.000000" x="21.000000" y="21.000000" />
+		<rect id="circle.[object SVGAnimatedString]" width="4.670000" height="5.000000" x="26.000000" y="26.000000" />
+	</g>
+</svg>
