@@ -1,4 +1,9 @@
 <script>
+
+    // Это сделает  приложение полностью статическим, убрать потом!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    export const prerender = true;
+
+
     import { page } from '$app/state';
     import HeaderMainPage from "$lib/components/Header_main_page.svelte";
     import HeaderStandart from "$lib/components/Header_standart.svelte";
