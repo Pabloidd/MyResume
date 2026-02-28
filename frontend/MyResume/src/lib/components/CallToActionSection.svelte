@@ -46,7 +46,13 @@
         border-radius: 9999px;
         font-weight: bold;
         font-size: 22px;
+        transition: 0.25s;
+    }
 
+.call_to_action_button:hover{
+        cursor: pointer;
+        background-color: rgba(251, 255, 248, 0.9);
+        
     }
 
     @media(max-width: 1300px){
