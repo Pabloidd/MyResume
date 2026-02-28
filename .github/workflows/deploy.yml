@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend/MyResume  # ← ВАЖНО: указываем папку с проектом
+        working-directory: ./frontend/MyResume
     
     steps:
       - name: Checkout
@@ -30,33 +30,62 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './frontend/MyResume/package-lock.json'  # ← Явно указываем путь
+          cache-dependency-path: './frontend/MyResume/package-lock.json'
 
       - name: Install dependencies
         run: |
           npm install
-          npm install -D @sveltejs/adapter-vercel
+          npm install -D @sveltejs/adapter-static  # Используем static для GitHub Pages
 
-      - name: Build
+      - name: Check svelte.config.js
+        run: |
+          echo "=== svelte.config.js content ==="
+          cat svelte.config.js
+
+      - name: Build project
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: npm run build
 
-      - name: List build directory  
+      - name: Debug build output
         run: |
+          echo "=== Current directory: $(pwd) ==="
+          echo "=== Files in root ==="
           ls -la
-          find . -name "build" -type d
-          find . -name "dist" -type d
-  
+          echo "=== Looking for build output ==="
+          find . -type d \( -name "build" -o -name "dist" -o -name ".svelte-kit" \) | head -20
+          echo "=== If build exists, show contents ==="
+          if [ -d "build" ]; then
+            echo "build folder found!"
+            ls -la build/
+          elif [ -d "dist" ]; then
+            echo "dist folder found!"
+            ls -la dist/
+          elif [ -d ".svelte-kit/output" ]; then
+            echo "svelte-kit output found!"
+            ls -la .svelte-kit/output/
+          else
+            echo "❌ No build folder found!"
+          fi
+
+      - name: Determine build folder
+        id: folder
+        run: |
+          if [ -d "build" ]; then
+            echo "path=build" >> $GITHUB_OUTPUT
+          elif [ -d "dist" ]; then
+            echo "path=dist" >> $GITHUB_OUTPUT
+          elif [ -d ".svelte-kit/output" ]; then
+            echo "path=.svelte-kit/output" >> $GITHUB_OUTPUT
+          else
+            echo "path=." >> $GITHUB_OUTPUT
+            echo "⚠️ No build folder found, using current directory"
+          fi
+
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            ./build
-            ./dist
-            ./frontend/MyResume/build
-            ./frontend/MyResume/dist
-          if-no-files-found: warn
+          path: './frontend/MyResume/${{ steps.folder.outputs.path }}'
 
   deploy:
     needs: build
