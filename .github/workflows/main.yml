@@ -1,71 +1,57 @@
-# Имя workflow — будет отображаться в GitHub Actions
 name: Deploy to GitHub Pages
 
-# Когда запускать этот workflow
 on:
-  # Срабатывает на push в ветку main
   push:
     branches: ['main']
-  # Позволяет запускать воркфлоу вручную из вкладки Actions на GitHub
   workflow_dispatch:
 
-# Разрешения, которые дает этому workflow GitHub
 permissions:
-  contents: read # Разрешение читать код репозитория
-  pages: write    # Разрешение записывать в GitHub Pages
-  id-token: write # Нужно для аутентификации
+  contents: read
+  pages: write
+  id-token: write
 
-# Разрешаем только один одновременный деплой
 concurrency:
   group: 'pages'
   cancel-in-progress: true
 
 jobs:
-  # Джоб для сборки сайта
   build:
-    runs-on: ubuntu-latest # Операционная система для сборки
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend/MyResume  # ← ВАЖНО: указываем папку с проектом
+    
     steps:
-      # Шаг 1: Скачиваем код из репозитория
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Шаг 2: Настраиваем Node.js
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Версия Node.js
-          cache: 'npm'       # Кэшируем зависимости для ускорения
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/MyResume/package-lock.json'  # ← Явно указываем путь
 
-      # Шаг 3: Устанавливаем зависимости
       - name: Install dependencies
-        run: |
-          ls -la
-          npm ci
+        run: npm ci
 
-      # Шаг 4: Собираем проект
       - name: Build
-        # Передаем переменную окружения, которую мы использовали в svelte.config.js
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: npm run build
 
-      # Шаг 5: Загружаем результат сборки (папку build) как артефакт
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'build/' # Путь к папке со статикой [citation:2][citation:5]
+          path: './frontend/MyResume/build'  # ← Путь к собранной папке
 
-  # Джоб для деплоя (запускается только после успешной сборки)
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # Ссылка на твой сайт
-
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Шаг: Деплоим загруженный ранее артефакт на GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
