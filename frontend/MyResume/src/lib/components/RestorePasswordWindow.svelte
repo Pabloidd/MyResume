@@ -1,8 +1,9 @@
 <script>
     import { goto } from "$app/navigation";
+    import { base } from '$app/paths';
 
     function goToConfirmWindow(){
-      goto('/SignIn/restorePassword/confirm')
+      goto('{base}/SignIn/restorePassword/confirm')
     }
 </script>
 
