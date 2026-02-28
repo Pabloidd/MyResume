@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend/MyResume
     
     steps:
       - name: Checkout
@@ -26,62 +29,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Go to project folder
-        run: |
-          cd frontend/MyResume
-          echo "=== Current directory: $(pwd) ==="
-          ls -la
+          cache: 'npm'
+          cache-dependency-path: './frontend/MyResume/package-lock.json'
 
       - name: Install dependencies
-        run: |
-          cd frontend/MyResume
-          npm install
+        run: npm install
 
-      - name: Check svelte.config.js
-        run: |
-          cd frontend/MyResume
-          echo "=== SVELTE CONFIG ==="
-          cat svelte.config.js
-
-      - name: Check package.json scripts
-        run: |
-          cd frontend/MyResume
-          echo "=== PACKAGE.JSON SCRIPTS ==="
-          cat package.json | grep -A 10 '"scripts"'
-
-      - name: Try to build with verbose output
-        run: |
-          cd frontend/MyResume
-          echo "=== STARTING BUILD ==="
-          npm run build --verbose 2>&1 | tee build.log || true
-          echo "=== BUILD LOG ==="
-          cat build.log
-          echo "=== EXIT CODE: $? ==="
-
-      - name: Check what was built
-        run: |
-          cd frontend/MyResume
-          echo "=== AFTER BUILD ==="
-          ls -la
-          echo "=== SEARCHING FOR BUILD FOLDERS ==="
-          find . -type d -name "build" -o -name "dist" -o -name ".svelte-kit" | head -20
-          
-          # Create fallback if nothing found
-          if [ ! -d "build" ] && [ ! -d "dist" ]; then
-            echo "=== NO BUILD FOUND - CREATING FALLBACK ==="
-            mkdir -p build
-            echo "<h1>MyResume</h1>" > build/index.html
-            echo "<p>Build failed - showing fallback</p>" >> build/index.html
-            echo "<pre>" >> build/index.html
-            cat build.log >> build/index.html 2>/dev/null || echo "No build log" >> build/index.html
-            echo "</pre>" >> build/index.html
-          fi
+      - name: Build project
+        env:
+          BASE_PATH: '/${{ github.event.repository.name }}'
+        run: npm run build
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/MyResume/build'
+          path: './frontend/MyResume/build'  # Путь от корня репозитория
 
   deploy:
     needs: build
