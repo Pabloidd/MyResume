@@ -24,6 +24,7 @@
 
 	.feedback-img:hover{
 		max-width: 175px;
+		cursor: pointer;
 	}
 </style>
 
