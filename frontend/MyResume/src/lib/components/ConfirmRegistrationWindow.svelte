@@ -3,7 +3,7 @@
     import { base } from '$app/paths';
 
     function goToMain(){
-        goto('{base}/')
+        goto(`${base}/`)
     }
 </script>
 
