@@ -5,6 +5,9 @@
   import { page } from '$app/stores';
   import { base } from '$app/paths';
 
+  function goToMain(){
+    goto(`${base}/`)
+}
 </script>
 
 <header class="dashboard-header">
@@ -17,7 +20,7 @@
             <a href="{base}/profile" class="nav-link " class:isActive={$page.url.pathname === '/profile'}>Личный кабинет</a>
         </nav>
 
-        <button class="logout-btn">
+        <button type="button" on:click={goToMain} class="logout-btn">
             <img src="{exit}" class="logout-icon" alt="exit"/>
             Выйти
         </button>
