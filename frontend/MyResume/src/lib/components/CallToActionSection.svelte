@@ -1,8 +1,9 @@
 <script>
     import { goto } from "$app/navigation";
+    import { base } from '$app/paths';
 
   function goToSignIn(){
-    goto('/SignIn')
+    goto('{base}/SignIn')
   }
 </script>
 
