@@ -1,6 +1,7 @@
 <script>
     import arrow from "$lib/images/arrow.svg";
     import { goto } from "$app/navigation";
+    import { base } from '$app/paths';
 
   function goToSignIn(){
     goto('{base}/SignIn')
