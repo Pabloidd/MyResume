@@ -33,7 +33,7 @@ jobs:
           cache-dependency-path: './frontend/MyResume/package-lock.json'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         env:
@@ -43,7 +43,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/MyResume/build'  # Путь от корня репозитория
+          path: './frontend/MyResume/build'
 
   deploy:
     needs: build
