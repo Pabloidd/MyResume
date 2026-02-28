@@ -31,8 +31,8 @@
     </div>
     
     <div class="links">
-      <a href="/registration" class="register-link">НЕТ АККАУНТА? СОЗДАЙТЕ ЕГО!</a>
-      <a href="/SignIn/restorePassword" class="forgot-link">ЗАБЫЛИ ПАРОЛЬ?</a>
+      <a href="{base}/registration" class="register-link">НЕТ АККАУНТА? СОЗДАЙТЕ ЕГО!</a>
+      <a href="{base}/SignIn/restorePassword" class="forgot-link">ЗАБЫЛИ ПАРОЛЬ?</a>
     </div>
     
     <button type="button" on:click={goToProfile} class="submit-btn">
