@@ -3,7 +3,7 @@
     import { goto } from "$app/navigation";
 
   function goToSignIn(){
-    goto('/SignIn')
+    goto('{base}/SignIn')
   }
 </script>
 
