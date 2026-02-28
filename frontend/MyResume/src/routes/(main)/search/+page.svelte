@@ -2,6 +2,7 @@
     import SearchPage from '$lib/components/search/SearchPage.svelte';
     import { goto } from '$app/navigation';
     import feedback from '$lib/images/feedback.png';
+	import { base } from '$app/paths';
     
     function goToFeedback(){
         goto(`$/profile/feedback/`)
