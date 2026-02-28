@@ -15,8 +15,10 @@
         document.body.classList.add('main-layout');
         document.body.classList.remove('auth-layout');
     }
+
+    $: isMainPage = page.url.pathname === base + '/' || page.url.pathname === base;
 </script>
-{#if page.url.pathname === '{base}/'}<!--если страница главная-->
+{#if isMainPage}<!--если страница главная-->
     <HeaderMainPage />
 {:else}
     <HeaderStandart />
