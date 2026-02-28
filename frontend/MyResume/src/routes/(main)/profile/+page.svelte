@@ -19,6 +19,11 @@
 		bottom: 1rem;
 		right: 1rem;
 		max-width: 150px;
+		transition: 0.25s;
+	}
+
+	.feedback-img:hover{
+		max-width: 175px;
 	}
 </style>
 
