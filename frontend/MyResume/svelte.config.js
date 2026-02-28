@@ -1,13 +1,10 @@
-import adapter from '@sveltejs/adapter-vercel'; 
+import adapter from '@sveltejs/adapter-auto'; 
 
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
+export default {
   kit: {
-    adapter: adapter(), // Убираем лишние опции
+    adapter: adapter(),
     paths: {
       base: process.env.NODE_ENV === 'production' ? '/MyResume' : ''
     }
   }
 };
-
-export default config;
