@@ -3,7 +3,7 @@
     import { base } from '$app/paths';
 
     function goToConfirmWindow(){
-      goto('{base}/registration/confirm')
+      goto(`${base}/registration/confirm`)
     }
  </script>
 
