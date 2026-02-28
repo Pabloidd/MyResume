@@ -1,8 +1,5 @@
 <script>
 
-    // Это сделает  приложение полностью статическим, убрать потом!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    export const prerender = true;
-
 
     import { page } from '$app/state';
     import { base } from '$app/paths';
