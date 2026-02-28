@@ -1,8 +1,8 @@
 <script>
     import { goto } from "$app/navigation";
-
+    import { base } from '$app/paths';
     function goToProfile(){
-      goto('/profile')
+      goto('{base}/profile')
     }
 </script>
 
