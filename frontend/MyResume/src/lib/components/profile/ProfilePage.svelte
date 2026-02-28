@@ -1,13 +1,14 @@
 <script>
     import { goto } from '$app/navigation';
   import ResumeRow from './ResumeRow.svelte';
+    import { base } from '$app/paths';
 
   function goToCreate(){
-    goto('/profile/create');
+    goto('{base}/profile/create');
   }
 
   function goToPremium(){
-    goto('/profile/premium/')
+    goto('{base}/profile/premium/')
   }
 </script>
 
