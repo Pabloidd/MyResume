@@ -5,7 +5,7 @@
 	import { base } from '$app/paths';
     
     function goToFeedback(){
-        goto(`$/profile/feedback/`)
+        goto(`${base}/profile/feedback/`)
     }
 </script>
 <SearchPage />
