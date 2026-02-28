@@ -35,12 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npm install -D @sveltejs/adapter-static  # Используем static для GitHub Pages
-
-      - name: Check svelte.config.js
-        run: |
-          echo "=== svelte.config.js content ==="
-          cat svelte.config.js
+          npm install -D @sveltejs/adapter-static
 
       - name: Build project
         env:
@@ -50,50 +45,28 @@ jobs:
       - name: Debug build output
         run: |
           echo "=== Current directory: $(pwd) ==="
-          echo "=== Files in root ==="
+          echo "=== Files after build ==="
           ls -la
-          echo "=== Looking for build output ==="
-          find . -type d \( -name "build" -o -name "dist" -o -name ".svelte-kit" \) | head -20
-          echo "=== If build exists, show contents ==="
+          echo "=== Looking for build folder ==="
           if [ -d "build" ]; then
-            echo "build folder found!"
+            echo "✅ build folder found!"
             ls -la build/
+            echo "path=build" > build-path.txt
           elif [ -d "dist" ]; then
-            echo "dist folder found!"
+            echo "✅ dist folder found!"
             ls -la dist/
+            echo "path=dist" > build-path.txt
           elif [ -d ".svelte-kit/output" ]; then
-            echo "svelte-kit output found!"
+            echo "✅ .svelte-kit/output folder found!"
             ls -la .svelte-kit/output/
+            echo "path=.svelte-kit/output" > build-path.txt
           else
             echo "❌ No build folder found!"
+            echo "path=." > build-path.txt
           fi
-
-      - name: Determine build folder
-        id: folder
-        run: |
-          if [ -d "build" ]; then
-            echo "path=build" >> $GITHUB_OUTPUT
-          elif [ -d "dist" ]; then
-            echo "path=dist" >> $GITHUB_OUTPUT
-          elif [ -d ".svelte-kit/output" ]; then
-            echo "path=.svelte-kit/output" >> $GITHUB_OUTPUT
-          else
-            echo "path=." >> $GITHUB_OUTPUT
-            echo "⚠️ No build folder found, using current directory"
-          fi
+          cat build-path.txt
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/MyResume/${{ steps.folder.outputs.path }}'
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          path: './frontend/MyResume/build'  # Явно указываем полный путь от корня репо
