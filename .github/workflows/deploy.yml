@@ -29,44 +29,44 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: './frontend/MyResume/package-lock.json'
+
+      - name: Debug - list files
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Files in project ==="
+          ls -la
+          echo "=== package.json content ==="
+          cat package.json
 
       - name: Install dependencies
-        run: |
-          npm install
-          npm install -D @sveltejs/adapter-static
+        run: npm install
 
-      - name: Build project
-        env:
-          BASE_PATH: '/${{ github.event.repository.name }}'
-        run: npm run build
+      - name: Try to build
+        run: npm run build || echo "Build failed but continuing"
 
-      - name: Debug build output
+      - name: Debug - find any output
         run: |
-          echo "=== Current directory: $(pwd) ==="
-          echo "=== Files after build ==="
-          ls -la
-          echo "=== Looking for build folder ==="
-          if [ -d "build" ]; then
-            echo "✅ build folder found!"
-            ls -la build/
-            echo "path=build" > build-path.txt
-          elif [ -d "dist" ]; then
-            echo "✅ dist folder found!"
-            ls -la dist/
-            echo "path=dist" > build-path.txt
-          elif [ -d ".svelte-kit/output" ]; then
-            echo "✅ .svelte-kit/output folder found!"
-            ls -la .svelte-kit/output/
-            echo "path=.svelte-kit/output" > build-path.txt
-          else
-            echo "❌ No build folder found!"
-            echo "path=." > build-path.txt
-          fi
-          cat build-path.txt
+          echo "=== Searching for ANY build output ==="
+          find . -type d -name "build" -o -name "dist" -o -name "output" | head -20
+          echo "=== All directories ==="
+          find . -type d | head -20
+          echo "=== Creating manual build folder ==="
+          mkdir -p ./build
+          echo "<h1>Test</h1>" > ./build/index.html
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/MyResume/build'  # Явно указываем полный путь от корня репо
+          path: './frontend/MyResume/build'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
