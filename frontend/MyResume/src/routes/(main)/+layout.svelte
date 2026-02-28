@@ -5,6 +5,7 @@
 
 
     import { page } from '$app/state';
+    import { base } from '$app/paths';
     import HeaderMainPage from "$lib/components/Header_main_page.svelte";
     import HeaderStandart from "$lib/components/Header_standart.svelte";
     import Footer from "$lib/components/Footer.svelte";
@@ -15,7 +16,7 @@
         document.body.classList.remove('auth-layout');
     }
 </script>
-{#if page.url.pathname === '/'}<!--если страница главная-->
+{#if page.url.pathname === '{base}/'}<!--если страница главная-->
     <HeaderMainPage />
 {:else}
     <HeaderStandart />
