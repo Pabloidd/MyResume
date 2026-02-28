@@ -17,9 +17,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend/MyResume
     
     steps:
       - name: Checkout
@@ -30,32 +27,33 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Debug - list files
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Files in project ==="
-          ls -la
-          echo "=== package.json content ==="
-          cat package.json
+      - name: Go to project folder
+        run: cd frontend/MyResume && pwd && ls -la
 
       - name: Install dependencies
-        run: npm install
-
-      - name: Try to build
-        run: npm run build || echo "Build failed but continuing"
-
-      - name: Debug - find any output
         run: |
-          echo "=== Searching for ANY build output ==="
-          find . -type d -name "build" -o -name "dist" -o -name "output" | head -20
-          echo "=== All directories ==="
-          find . -type d | head -20
-          echo "=== Creating manual build folder ==="
-          mkdir -p ./build
-          echo "<h1>Test</h1>" > ./build/index.html
+          cd frontend/MyResume
+          npm install
 
-      - name: Upload Artifact
+      - name: Build
+        run: |
+          cd frontend/MyResume
+          npm run build
+
+      - name: Show what we have
+        run: |
+          cd frontend/MyResume
+          echo "=== AFTER BUILD ==="
+          ls -la
+          echo "=== Looking for build/dist ==="
+          find . -name "build" -type d
+          find . -name "dist" -type d
+          echo "=== Creating manual fallback ==="
+          mkdir -p ./build
+          echo "<h1>MyResume</h1>" > ./build/index.html
+          echo "<p>Fallback page</p>" >> ./build/index.html
+
+      - name: Upload from root
         uses: actions/upload-pages-artifact@v3
         with:
           path: './frontend/MyResume/build'
