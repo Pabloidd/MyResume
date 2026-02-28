@@ -4,11 +4,11 @@
     import { base } from '$app/paths';
 
   function goToCreate(){
-    goto('{base}/profile/create');
+    goto(`${base}/profile/create`);
   }
 
   function goToPremium(){
-    goto('{base}/profile/premium/')
+    goto(`${base}/profile/premium/`)
   }
 </script>
 
