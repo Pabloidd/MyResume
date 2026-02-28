@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { base } from '$app/paths';
     function goToProfile(){
-      goto('{base}/profile')
+      goto(`${base}/profile`)
     }
 </script>
 
