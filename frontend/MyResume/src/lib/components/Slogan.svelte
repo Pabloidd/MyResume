@@ -3,9 +3,9 @@
     import { goto } from "$app/navigation";
     import { base } from '$app/paths';
 
-  function goToSignIn(){
-    goto(`${base}/SignIn`)
-  }
+      function goToSignIn(){
+        goto(`${base}/SignIn`);
+    }
 </script>
 
 <section class="slogan">
