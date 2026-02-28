@@ -3,7 +3,7 @@
     import { base } from '$app/paths';
 
   function goToSignIn(){
-    goto('{base}/SignIn')
+    goto(`${base}/SignIn`)
   }
 </script>
 
