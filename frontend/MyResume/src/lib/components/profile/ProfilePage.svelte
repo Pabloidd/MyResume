@@ -10,6 +10,10 @@
   function goToPremium(){
     goto(`${base}/profile/premium/`)
   }
+
+function goToRestorePassword(){
+    goto(`${base}/SignIn/restorePassword`)
+  }
 </script>
 
 <!-- Заголовок и приветствие -->
@@ -31,7 +35,7 @@
   
   <!-- Сменить пароль -->
   <div class="info-row">
-    <button class="action-link change-password">Сменить пароль</button>
+    <button type="button" on:click={goToRestorePassword} class="action-link change-password">Сменить пароль</button>
   </div>
   
   <!-- Статус -->
