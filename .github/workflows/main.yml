@@ -38,7 +38,9 @@ jobs:
 
       # Шаг 3: Устанавливаем зависимости
       - name: Install dependencies
-        run: npm install
+        run: |
+          ls -la
+          npm ci
 
       # Шаг 4: Собираем проект
       - name: Build
