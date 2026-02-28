@@ -3,6 +3,7 @@
   import exit from "$lib/images/exit.svg"
 
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { base } from '$app/paths';
 
   function goToMain(){
