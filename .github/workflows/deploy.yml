@@ -42,6 +42,12 @@ jobs:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: npm run build
 
+      - name: List build directory  
+        run: |
+          ls -la
+          find . -name "build" -type d
+          find . -name "dist" -type d
+  
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
