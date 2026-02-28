@@ -16,9 +16,15 @@
         
       <div class="nav-container">
         <nav class="main-nav">
-          <a href="{base}/search" class="nav-link" class:isActive={$page.url.pathname === `${base}/search`}>Поиск Резюме</a>
-          <a href="{base}/profile" class="nav-link" class:isActive={$page.url.pathname === `${base}/profile`}>Личный кабинет</a>
-        </nav>
+          <a href="{base}/search" class="nav-link" 
+             class:isActive={$page.url.pathname === `${base}/search` || $page.url.pathname === `${base}/search/`}>
+             Поиск Резюме
+          </a>
+          <a href="{base}/profile" class="nav-link" 
+             class:isActive={$page.url.pathname === `${base}/profile` || $page.url.pathname === `${base}/profile/`}>
+             Личный кабинет
+          </a>
+      </nav>
 
         <button type="button" on:click={goToMain} class="logout-btn">
             <img src="{exit}" class="logout-icon" alt="exit"/>
