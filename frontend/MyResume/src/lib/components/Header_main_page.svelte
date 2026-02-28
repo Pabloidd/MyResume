@@ -1,11 +1,12 @@
 <script>
   import logo from "$lib/images/logo.svg"
+  import { base } from '$app/paths';
   
 </script>
 
 <header class="main_page_header">
   <img src={logo} class="logo" alt="MyResume_logo">
-    <a class="a" href="/SignIn">Войти</a>
+    <a class="a" href="{base}/SignIn">Войти</a>
 </header>
 
 <style>
