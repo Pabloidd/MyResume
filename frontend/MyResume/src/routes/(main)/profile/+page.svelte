@@ -4,7 +4,7 @@
     import feedback from '$lib/images/feedback.png';
     
     function goToFeedback(){
-        goto('/profile/feedback/')
+        goto(`$/profile/feedback/`)
     }
 
 </script>
