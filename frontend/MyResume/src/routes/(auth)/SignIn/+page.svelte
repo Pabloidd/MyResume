@@ -1,5 +1,5 @@
 <script>
-    import SignInWindow from "$lib/components/SignInWindow.svelte";
+    import SignInWindow from "$lib/components/auth/SignInWindow.svelte";
 
 
 </script>

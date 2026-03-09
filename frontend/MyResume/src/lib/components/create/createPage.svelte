@@ -1,6 +1,6 @@
 <script>
   let currentStep = 1;
-  let totalSteps = 4;
+  let totalSteps = 5;
   
   function nextStep() {
     if (currentStep < totalSteps) {
@@ -75,6 +75,33 @@
   function removeSkill(skill) {
     selectedSkills = selectedSkills.filter(s => s !== skill);
   }
+
+  // Данные для экспертов
+  let selectedExpert = null;
+  const experts = [
+    {
+      id: 'serious',
+      name: 'Супер серьёзный',
+      icon: '👔',
+      description: 'Строгий подход, академический стиль, фокус на цифрах и результатах.'
+    },
+    {
+      id: 'funny',
+      name: 'Шутливый',
+      icon: '🥸',
+      description: 'Креативный подход, легкий слог, выделяется из толпы.'
+    },
+    {
+      id: 'modern',
+      name: 'Современный',
+      icon: '🚀',
+      description: 'Трендовый дизайн, фокус на софт-скиллах и адаптивности.'
+    }
+  ];
+
+  function selectExpert(id) {
+    selectedExpert = id;
+  }
 </script>
 
 <div class="resume-creator">
@@ -83,29 +110,37 @@
     <div class="step-item" class:active={currentStep === 1}>
       <span class="step-number">1</span>
       <div class="step-text">
-        <span class="step-title">Контакты</span>
-        <span class="step-subtitle">Кто вы?</span>
+        <span class="step-title">Стилистика</span>
+        <span class="step-subtitle">Эксперт</span>
       </div>
     </div>
     
     <div class="step-item" class:active={currentStep === 2}>
       <span class="step-number">2</span>
       <div class="step-text">
-        <span class="step-title">Опыт</span>
-        <span class="step-subtitle">История работы</span>
+        <span class="step-title">Контакты</span>
+        <span class="step-subtitle">Кто вы?</span>
       </div>
     </div>
     
     <div class="step-item" class:active={currentStep === 3}>
       <span class="step-number">3</span>
       <div class="step-text">
-        <span class="step-title">Образование</span>
-        <span class="step-subtitle">Учеба</span>
+        <span class="step-title">Опыт</span>
+        <span class="step-subtitle">История работы</span>
       </div>
     </div>
     
     <div class="step-item" class:active={currentStep === 4}>
       <span class="step-number">4</span>
+      <div class="step-text">
+        <span class="step-title">Образование</span>
+        <span class="step-subtitle">Учеба</span>
+      </div>
+    </div>
+    
+    <div class="step-item" class:active={currentStep === 5}>
+      <span class="step-number">5</span>
       <div class="step-text">
         <span class="step-title">Навыки</span>
         <span class="step-subtitle">Суперсилы</span>
@@ -113,8 +148,30 @@
     </div>
   </div>
 
-  <!-- Шаг 1: Контакты -->
+  <!-- Шаг 1: Выбор эксперта -->
   {#if currentStep === 1}
+    <div class="step-content">
+      <h2 class="content-title">Выберите стиль резюме</h2>
+      <p class="content-subtitle">Наш виртуальный эксперт поможет вам оформить резюме в выбранном ключе.</p>
+      
+      <div class="experts-grid">
+        {#each experts as expert}
+          <button 
+            type="button" 
+            class="expert-card {selectedExpert === expert.id ? 'selected' : ''}"
+            on:click={() => selectExpert(expert.id)}
+          >
+            <div class="expert-icon">{expert.icon}</div>
+            <h3 class="expert-name">{expert.name}</h3>
+            <p class="expert-desc">{expert.description}</p>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Шаг 2: Контакты -->
+  {#if currentStep === 2}
     <div class="step-content">
       <h2 class="content-title">Начнем с основ</h2>
       <p class="content-subtitle">Работодатели должны знать, как с вами связаться.</p>
@@ -183,8 +240,8 @@
     </div>
   {/if}
 
-  <!-- Шаг 2: Опыт (заглушка) -->
-  {#if currentStep === 2}
+  <!-- Шаг 3: Опыт (заглушка) -->
+  {#if currentStep === 3}
     <div class="step-content">
       <h2 class="content-title">Опыт работы</h2>
       <p class="content-subtitle">Добавьте места работы</p>
@@ -194,8 +251,8 @@
     </div>
   {/if}
 
-  <!-- Шаг 3: Образование (заглушка) -->
-  {#if currentStep === 3}
+  <!-- Шаг 4: Образование (заглушка) -->
+  {#if currentStep === 4}
     <div class="step-content">
       <h2 class="content-title">Образование</h2>
       <p class="content-subtitle">Добавьте учебные заведения</p>
@@ -205,8 +262,8 @@
     </div>
   {/if}
 
-  <!-- Шаг 4: Навыки -->
-  {#if currentStep === 4}
+  <!-- Шаг 5: Навыки -->
+  {#if currentStep === 5}
     <div class="step-content">
       <h2 class="content-title">Ваши суперсилы</h2>
       <p class="content-subtitle">Выберите навыки из списка или добавьте свои</p>
@@ -554,6 +611,56 @@
     background: #1d4ed8;
   }
 
+  /* Эксперты */
+  .experts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .expert-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .expert-card:hover {
+    border-color: #94a3b8;
+    transform: translateY(-2px);
+  }
+
+  .expert-card.selected {
+    border-color: #2563eb;
+    background: #f0f9ff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  }
+
+  .expert-icon {
+    font-size: 3rem;
+  }
+
+  .expert-name {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .expert-desc {
+    font-size: 0.95rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.5;
+  }
+
   /* Кнопки навигации */
   .navigation-buttons {
     display: flex;
@@ -627,6 +734,9 @@
     
     .step-subtitle {
       font-size: 0.8rem;
+    }
+    .experts-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
   }
 

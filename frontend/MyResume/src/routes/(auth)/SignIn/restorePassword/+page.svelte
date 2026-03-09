@@ -1,5 +1,5 @@
 <script>
-    import RestorePasswordWindow from "$lib/components/RestorePasswordWindow.svelte";
+    import RestorePasswordWindow from "$lib/components/auth/RestorePasswordWindow.svelte";
 
     
 </script>
