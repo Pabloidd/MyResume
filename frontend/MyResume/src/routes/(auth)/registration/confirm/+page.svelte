@@ -1,5 +1,5 @@
 <script>
-    import ConfirmRegistrationWindow from "$lib/components/ConfirmRegistrationWindow.svelte";
+    import ConfirmRegistrationWindow from "$lib/components/auth/ConfirmRegistrationWindow.svelte";
 
 
 </script>

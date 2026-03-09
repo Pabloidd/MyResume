@@ -20,9 +20,13 @@ function goToRestorePassword(){
 <div class="page-header">
   <div class="header-top">
     <h1 class="page-title">Личный кабинет</h1>
-    <button on:click={goToCreate} class="create-resume-btn">Создать резюме</button>
   </div>
   <p class="welcome-message">ДОБРО ПОЖАЛОВАТЬ!</p>
+</div>
+
+<!-- Блок создания резюме -->
+<div class="create-resume-section">
+  <button on:click={goToCreate} class="create-resume-btn">Создать резюме</button>
 </div>
 
 <!-- Информация о пользователе-->
@@ -127,23 +131,45 @@ function goToRestorePassword(){
     margin: 0;
   }
 
-  /* Кнопка Создать резюме (как кнопка Выйти) */
+  /* Секция создания резюме */
+  .create-resume-section {
+    margin-bottom: 3rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+  }
+
   .create-resume-btn {
-    background-color: rgba(193, 18, 31, 0.63);
-    border-radius: 8px;
-    margin: 0rem 3rem 0 0;
-    padding: 0.5rem 1.5rem;
-    color: rgba(255, 255, 255, 1);
-    font-size: 1.75rem;
-    font-weight: 550;
+    background-color: rgba(193, 18, 31, 0.85);
+    border-radius: 12px;
+    padding: 1rem 3rem;
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
+    box-shadow: 0 8px 20px rgba(193, 18, 31, 0.3);
+    width: 100%;
+    max-width: 400px;
   }
 
   .create-resume-btn:hover {
-    background-color: rgba(255, 0, 17, 0.63);
-    transform: translateY(-1px);
+    background-color: #c4121f;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 25px rgba(193, 18, 31, 0.4);
+  }
+
+  .create-resume-hint {
+    margin: 1rem 0 0 0;
+    font-size: 1.1rem;
+    color: #475569;
   }
 
   .user-info-section {
@@ -333,9 +359,13 @@ function goToRestorePassword(){
       font-size: 1.8rem;
     }
     
+    .create-resume-section {
+      padding: 2rem;
+    }
+    
     .create-resume-btn {
-      font-size: 1.5rem;
-      padding: 0.4rem 1.2rem;
+      font-size: 1.8rem;
+      padding: 0.8rem 2.5rem;
     }
   }
 
@@ -387,8 +417,12 @@ function goToRestorePassword(){
     }
     
     .create-resume-btn {
-      font-size: 1.25rem;
-      padding: 0.35rem 1rem;
+      font-size: 1.5rem;
+      padding: 0.75rem 2rem;
+    }
+    
+    .create-resume-hint {
+      font-size: 1rem;
     }
   }
 
@@ -426,10 +460,6 @@ function goToRestorePassword(){
       grid-template-columns: 1.5fr 1fr 1fr;
       font-size: 1rem;
       padding: 0.8rem 0.3rem;
-    }
-    
-    .create-resume-btn {
-      align-self: flex-start;
     }
   }
 
@@ -515,9 +545,13 @@ function goToRestorePassword(){
       gap: 0.75rem;
     }
     
+    .create-resume-section {
+      padding: 1.5rem;
+    }
+    
     .create-resume-btn {
-      width: 100%;
-      text-align: center;
+      font-size: 1.35rem;
+      padding: 0.7rem 1.5rem;
     }
   }
 
@@ -571,8 +605,13 @@ function goToRestorePassword(){
     }
     
     .create-resume-btn {
-      font-size: 1rem;
-      padding: 0.4rem 1rem;
+      font-size: 1.2rem;
+      padding: 0.6rem 1rem;
+      width: 100%;
+    }
+    
+    .create-resume-hint {
+      font-size: 0.9rem;
     }
   }
 </style>

@@ -3,9 +3,9 @@
 
     import { page } from '$app/state';
     import { base } from '$app/paths';
-    import HeaderMainPage from "$lib/components/Header_main_page.svelte";
-    import HeaderStandart from "$lib/components/Header_standart.svelte";
-    import Footer from "$lib/components/Footer.svelte";
+    import HeaderMainPage from "$lib/components/layout/HeaderMain.svelte";
+    import HeaderStandart from "$lib/components/layout/HeaderStandard.svelte";
+    import Footer from "$lib/components/layout/Footer.svelte";
     import { browser } from '$app/environment';
   
     if (browser) {
