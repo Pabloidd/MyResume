@@ -1,0 +1,8 @@
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.csproj.AssemblyReference.cache
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.GeneratedMSBuildEditorConfig.editorconfig
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.AssemblyInfoInputs.cache
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.AssemblyInfo.cs
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.csproj.CoreCompileInputs.cache
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.MvcApplicationPartsAssemblyInfo.cs
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.MvcApplicationPartsAssemblyInfo.cache
+/home/pabloid/projects/back/MyResume/resume_service_backend/obj/Debug/net9.0/resume_service_backend.sourcelink.json
