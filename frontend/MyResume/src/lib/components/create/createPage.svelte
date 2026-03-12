@@ -102,6 +102,110 @@
   function selectExpert(id) {
     selectedExpert = id;
   }
+
+  // ========== ДАННЫЕ ДЛЯ ОПЫТА РАБОТЫ ==========
+  let workExperience = [
+    {
+      id: Date.now(),
+      company: '',
+      position: '',
+      startDate: '',
+      endDate: '',
+      current: false,
+      description: ''
+    }
+  ];
+
+  function addWorkExperience() {
+    workExperience = [
+      ...workExperience,
+      {
+        id: Date.now() + Math.random(),
+        company: '',
+        position: '',
+        startDate: '',
+        endDate: '',
+        current: false,
+        description: ''
+      }
+    ];
+  }
+
+  function removeWorkExperience(id) {
+    if (workExperience.length > 1) {
+      workExperience = workExperience.filter(item => item.id !== id);
+    }
+  }
+
+  function toggleCurrentJob(item) {
+    item.current = !item.current;
+    if (item.current) {
+      item.endDate = '';
+    }
+  }
+
+  // ========== ДАННЫЕ ДЛЯ ОБРАЗОВАНИЯ ==========
+  let education = [
+    {
+      id: Date.now() + 1,
+      institution: '',
+      degree: '',
+      field: '',
+      startDate: '',
+      endDate: '',
+      current: false
+    }
+  ];
+
+  function addEducation() {
+    education = [
+      ...education,
+      {
+        id: Date.now() + Math.random() + 1,
+        institution: '',
+        degree: '',
+        field: '',
+        startDate: '',
+        endDate: '',
+        current: false
+      }
+    ];
+  }
+
+  function removeEducation(id) {
+    if (education.length > 1) {
+      education = education.filter(item => item.id !== id);
+    }
+  }
+
+  function toggleCurrentEducation(item) {
+    item.current = !item.current;
+    if (item.current) {
+      item.endDate = '';
+    }
+  }
+
+  // Степени образования
+  const degreeOptions = [
+    'Среднее общее',
+    'Среднее профессиональное',
+    'Бакалавр',
+    'Магистр',
+    'Кандидат наук',
+    'Доктор наук',
+    'MBA',
+    'Курсы переподготовки'
+  ];
+
+  // Месяцы для выбора дат
+  const months = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ];
+
+  // Годы для выбора (от 1980 до текущего)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1979 }, (_, i) => 1980 + i);
 </script>
 
 <div class="resume-creator">
@@ -240,25 +344,211 @@
     </div>
   {/if}
 
-  <!-- Шаг 3: Опыт (заглушка) -->
+  <!-- Шаг 3: Опыт работы -->
   {#if currentStep === 3}
     <div class="step-content">
       <h2 class="content-title">Опыт работы</h2>
       <p class="content-subtitle">Добавьте места работы</p>
-      <div class="placeholder-content">
-        <p>Здесь будет форма для опыта работы</p>
-      </div>
+      
+      {#each workExperience as exp, index}
+        <div class="experience-block">
+          <div class="block-header">
+            <h3 class="block-title">Место работы {index + 1}</h3>
+            {#if workExperience.length > 1}
+              <button 
+                class="remove-block" 
+                on:click={() => removeWorkExperience(exp.id)}
+                title="Удалить"
+              >✕</button>
+            {/if}
+          </div>
+          
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Компания</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                bind:value={exp.company}
+                placeholder="Название компании"
+              >
+            </div>
+            
+            <div class="form-group full-width">
+              <label class="form-label">Должность</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                bind:value={exp.position}
+                placeholder="Ваша должность"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Начало работы</label>
+              <div class="date-selects">
+                <select class="form-select" bind:value={exp.startMonth}>
+                  <option value="">Месяц</option>
+                  {#each months as month, idx}
+                    <option value={idx + 1}>{month}</option>
+                  {/each}
+                </select>
+                <select class="form-select" bind:value={exp.startYear}>
+                  <option value="">Год</option>
+                  {#each years as year}
+                    <option value={year}>{year}</option>
+                  {/each}
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Окончание работы</label>
+              <div class="date-selects">
+                {#if !exp.current}
+                  <select class="form-select" bind:value={exp.endMonth}>
+                    <option value="">Месяц</option>
+                    {#each months as month, idx}
+                      <option value={idx + 1}>{month}</option>
+                    {/each}
+                  </select>
+                  <select class="form-select" bind:value={exp.endYear}>
+                    <option value="">Год</option>
+                    {#each years as year}
+                      <option value={year}>{year}</option>
+                    {/each}
+                  </select>
+                {/if}
+              </div>
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  bind:checked={exp.current}
+                  on:change={() => toggleCurrentJob(exp)}
+                > По настоящее время
+              </label>
+            </div>
+            
+            <div class="form-group full-width">
+              <label class="form-label">Описание обязанностей и достижений</label>
+              <textarea 
+                class="form-textarea" 
+                bind:value={exp.description}
+                placeholder="Опишите ваши задачи, достижения, проекты..."
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      {/each}
+      
+      <button class="add-block-btn" on:click={addWorkExperience}>
+        + Добавить еще место работы
+      </button>
     </div>
   {/if}
 
-  <!-- Шаг 4: Образование (заглушка) -->
+  <!-- Шаг 4: Образование -->
   {#if currentStep === 4}
     <div class="step-content">
       <h2 class="content-title">Образование</h2>
       <p class="content-subtitle">Добавьте учебные заведения</p>
-      <div class="placeholder-content">
-        <p>Здесь будет форма для образования</p>
-      </div>
+      
+      {#each education as edu, index}
+        <div class="education-block">
+          <div class="block-header">
+            <h3 class="block-title">Образование {index + 1}</h3>
+            {#if education.length > 1}
+              <button 
+                class="remove-block" 
+                on:click={() => removeEducation(edu.id)}
+                title="Удалить"
+              >✕</button>
+            {/if}
+          </div>
+          
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label">Учебное заведение</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                bind:value={edu.institution}
+                placeholder="Название университета, колледжа, школы"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Степень</label>
+              <select class="form-select" bind:value={edu.degree}>
+                <option value="">Выберите степень</option>
+                {#each degreeOptions as degree}
+                  <option value={degree}>{degree}</option>
+                {/each}
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Специальность</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                bind:value={edu.field}
+                placeholder="Например: Программная инженерия"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Начало обучения</label>
+              <div class="date-selects">
+                <select class="form-select" bind:value={edu.startMonth}>
+                  <option value="">Месяц</option>
+                  {#each months as month, idx}
+                    <option value={idx + 1}>{month}</option>
+                  {/each}
+                </select>
+                <select class="form-select" bind:value={edu.startYear}>
+                  <option value="">Год</option>
+                  {#each years as year}
+                    <option value={year}>{year}</option>
+                  {/each}
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Окончание обучения</label>
+              <div class="date-selects">
+                {#if !edu.current}
+                  <select class="form-select" bind:value={edu.endMonth}>
+                    <option value="">Месяц</option>
+                    {#each months as month, idx}
+                      <option value={idx + 1}>{month}</option>
+                    {/each}
+                  </select>
+                  <select class="form-select" bind:value={edu.endYear}>
+                    <option value="">Год</option>
+                    {#each years as year}
+                      <option value={year}>{year}</option>
+                    {/each}
+                  </select>
+                {/if}
+              </div>
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  bind:checked={edu.current}
+                  on:change={() => toggleCurrentEducation(edu)}
+                > Обучаюсь до сих пор
+              </label>
+            </div>
+          </div>
+        </div>
+      {/each}
+      
+      <button class="add-block-btn" on:click={addEducation}>
+        + Добавить еще образование
+      </button>
     </div>
   {/if}
 
@@ -468,7 +758,8 @@
   }
 
   .form-input,
-  .form-textarea {
+  .form-textarea,
+  .form-select {
     padding: 0.75rem 1rem;
     font-size: 1rem;
     border: 2px solid #e2e8f0;
@@ -479,8 +770,18 @@
     box-sizing: border-box;
   }
 
+  .form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+  }
+
   .form-input:focus,
-  .form-textarea:focus {
+  .form-textarea:focus,
+  .form-select:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
@@ -492,15 +793,85 @@
     font-family: inherit;
   }
 
-  /* Placeholder заглушка */
-  .placeholder-content {
-    padding: 3rem;
-    text-align: center;
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  /* Блоки опыта и образования */
+  .experience-block,
+  .education-block {
+    background: #f8fafc;
     border-radius: 12px;
-    border: 2px dashed #e2e8f0;
-    color: #94a3b8;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .block-title {
     font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .remove-block {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #fee2e2;
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  .remove-block:hover {
+    background: #fecaca;
+    transform: scale(1.1);
+  }
+
+  /* Дата пикеры */
+  .date-selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #475569;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+
+  /* Кнопки добавления */
+  .add-block-btn {
+    background: none;
+    border: 2px dashed #94a3b8;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-block-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+    background: #f0f9ff;
   }
 
   /* Стили для навыков */
@@ -711,14 +1082,12 @@
 
   /* ===== АДАПТИВНОСТЬ ===== */
 
-  /* 1300px */
   @media (max-width: 1300px) {
     .resume-creator {
       max-width: 800px;
     }
   }
 
-  /* 1080px */
   @media (max-width: 1080px) {
     .content-title {
       font-size: 1.8rem;
@@ -735,12 +1104,12 @@
     .step-subtitle {
       font-size: 0.8rem;
     }
+    
     .experts-grid {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
   }
 
-  /* 900px */
   @media (max-width: 900px) {
     .steps-container {
       flex-wrap: wrap;
@@ -756,7 +1125,6 @@
     }
   }
 
-  /* 650px */
   @media (max-width: 650px) {
     .resume-creator {
       padding: 1rem;
@@ -787,6 +1155,10 @@
       font-size: 1rem;
     }
     
+    .date-selects {
+      grid-template-columns: 1fr;
+    }
+    
     .skills-grid {
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
@@ -808,7 +1180,6 @@
     }
   }
 
-  /* 475px */
   @media (max-width: 475px) {
     .content-title {
       font-size: 1.25rem;
@@ -833,7 +1204,8 @@
     }
     
     .form-input,
-    .form-textarea {
+    .form-textarea,
+    .form-select {
       padding: 0.6rem 0.8rem;
       font-size: 0.9rem;
     }
@@ -851,6 +1223,11 @@
     .nav-button {
       font-size: 1rem;
       padding: 0.6rem 1.5rem;
+    }
+    
+    .experience-block,
+    .education-block {
+      padding: 1rem;
     }
   }
 </style>
