@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cae94d3e636fe3162ce1a455dfa8d41e4ddf8afa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0fd5f87cc8a57bee8a877bac61191ccff98d3ebc")]
 [assembly: System.Reflection.AssemblyProductAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
