@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "oEMQ5tyXVp6b9oAvoqGOrS4F93Qabe9wMrm1Yxa7/8A=",
+  "Source": "resume_service_backend",
+  "BasePath": "_content/resume_service_backend",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

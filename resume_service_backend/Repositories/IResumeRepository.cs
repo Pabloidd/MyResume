@@ -1,36 +1,37 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using resume_service_backend.Models;
 
 namespace resume_service_backend.Repositories
 {
-        public interface IResumeRepository
+    public interface IResumeRepository
     {
-        /// <summary>
-        /// sp_get_resumes_by_email - получить все резюме пользователя
-        /// </summary>
+        // Существующие методы
         Task<List<ResumeBasic>> GetByEmailAsync(string email);
-
-        /// <summary>
-        /// sp_get_public_resumes_by_tags - публичные резюме по тегам
-        /// </summary>
         Task<List<PublicResume>> GetPublicByTagsAsync(string? tagIds = null);
-
-        /// <summary>
-        /// sp_get_all_resumes_basic - все резюме (ID + название)
-        /// </summary>
         Task<List<ResumeBasic>> GetAllBasicAsync();
-
-        /// <summary>
-        /// sp_toggle_resume_status - переключить статус
-        /// </summary>
         Task<string> ToggleStatusAsync(int resumeId);
-
-        /// <summary>
-        /// sp_create_resume_with_tags - создать резюме с тегами
-        /// </summary>
         Task<int> CreateWithTagsAsync(CreateResumeRequest request);
+        
+        // НОВЫЕ методы
+        /// <summary>
+        /// Получить полное резюме по ID (с PDF данными)
+        /// </summary>
+        Task<Resume?> GetByIdAsync(int id);
+        
+        /// <summary>
+        /// Удалить резюме по ID
+        /// </summary>
+        Task DeleteAsync(int id);
+        
+        /// <summary>
+        /// Обновить существующее резюме
+        /// </summary>
+        Task UpdateAsync(UpdateResumeRequest request);
+        
+        /// <summary>
+        /// Получить количество резюме пользователя
+        /// </summary>
+        Task<int> GetCountByEmailAsync(string email);
     }
 }

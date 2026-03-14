@@ -1,6 +1,8 @@
 using Dapper;
 using MySqlConnector;
 using System.Data;
+using Microsoft.Extensions.Options;
+using resume_service_backend.Options;
 
 namespace resume_service_backend.Repositories
 {
@@ -8,16 +10,16 @@ namespace resume_service_backend.Repositories
     {
         protected readonly string _connectionString;
 
-        protected AbstractRepository(string connectionString)
+        protected AbstractRepository(IOptions<MariaDbOptions> options)
         {
-            _connectionString = connectionString;
+            _connectionString = options.Value.ConnectionString;
         }   
 
         /// <summary>
         /// ЕДИНСТВЕННЫЙ метод, который управляет соединением и транзакцией.
         /// Принимает функцию, которая будет выполняться внутри транзакции.
         /// </summary>
-        private async Task<T> ExecuteInTransactionAsync<T>(
+        protected async Task<T> ExecuteInTransactionAsync<T>(
             Func<MySqlConnection, MySqlTransaction, Task<T>> action)
         {
             using var connection = new MySqlConnection(_connectionString);

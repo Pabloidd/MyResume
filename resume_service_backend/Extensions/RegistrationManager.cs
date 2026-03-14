@@ -1,5 +1,6 @@
 using resume_service_backend.Options;
 using resume_service_backend.Repositories;
+using resume_service_backend.Services;
 
 namespace resume_service_backend.Extensions
 {
@@ -24,7 +25,9 @@ namespace resume_service_backend.Extensions
             services.AddScoped<ITagRepository, TagRepository>();
             services.AddScoped<IArticleRepository, ArticleRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             
+            services.AddScoped<IPdfGenerationService, PdfGenerationService>();
 
             return services;
         }

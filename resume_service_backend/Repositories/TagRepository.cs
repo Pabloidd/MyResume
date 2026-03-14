@@ -1,11 +1,13 @@
 using resume_service_backend.Models;
+using Microsoft.Extensions.Options;
+using resume_service_backend.Options;
 
 
 namespace resume_service_backend.Repositories
 {
     public class TagRepository : AbstractRepository, ITagRepository
     {
-        public TagRepository(string connectionString) : base(connectionString) { }
+        public TagRepository(IOptions<MariaDbOptions> options) : base(options) { }
 
         public async Task<List<Tag>> GetByCategoryAsync(string category)
         {

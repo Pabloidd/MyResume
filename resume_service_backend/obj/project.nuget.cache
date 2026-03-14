@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "6dTmoe4xF+U=",
+  "dgSpecHash": "p3+JaIYHbTA=",
   "success": true,
   "projectFilePath": "/home/pabloid/projects/back/MyResume/resume_service_backend/resume_service_backend.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,8 @@
     "/home/pabloid/.nuget/packages/microsoft.extensions.options.configurationextensions/9.0.0/microsoft.extensions.options.configurationextensions.9.0.0.nupkg.sha512",
     "/home/pabloid/.nuget/packages/microsoft.extensions.primitives/9.0.0/microsoft.extensions.primitives.9.0.0.nupkg.sha512",
     "/home/pabloid/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512",
-    "/home/pabloid/.nuget/packages/mysqlconnector/2.5.0/mysqlconnector.2.5.0.nupkg.sha512"
+    "/home/pabloid/.nuget/packages/mysqlconnector/2.5.0/mysqlconnector.2.5.0.nupkg.sha512",
+    "/home/pabloid/.nuget/packages/questpdf/2026.2.3/questpdf.2026.2.3.nupkg.sha512"
   ],
   "logs": []
 }

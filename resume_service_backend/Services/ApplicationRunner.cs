@@ -6,6 +6,14 @@ namespace resume_service_backend.Services
     {
         public static async Task RunAsync(string[] args)
         {   
+            // Если передан флаг --test-pdf, запускаем только тест
+            if (args.Contains("--test-pdf"))
+            {
+                await TestPdfGeneration.Run();
+                return;
+            }
+            
+            // Иначе запускаем обычное приложение
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
