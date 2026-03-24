@@ -1,26 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "/home/pabloid/projects/back/MyResume/resume_service_backend/resume_service_backend.csproj": {}
+    "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj": {}
   },
   "projects": {
-    "/home/pabloid/projects/back/MyResume/resume_service_backend/resume_service_backend.csproj": {
+    "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/pabloid/projects/back/MyResume/resume_service_backend/resume_service_backend.csproj",
+        "projectUniqueName": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj",
         "projectName": "resume_service_backend",
-        "projectPath": "/home/pabloid/projects/back/MyResume/resume_service_backend/resume_service_backend.csproj",
-        "packagesPath": "/home/pabloid/.nuget/packages/",
-        "outputPath": "/home/pabloid/projects/back/MyResume/resume_service_backend/obj/",
+        "projectPath": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj",
+        "packagesPath": "C:\\Users\\Pabloid\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/pabloid/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Pabloid\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "/usr/lib64/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -39,7 +38,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -97,7 +96,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/9.0.104/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

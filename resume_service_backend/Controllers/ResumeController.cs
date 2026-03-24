@@ -187,7 +187,11 @@ namespace resume_service_backend.Controllers
             var resume = await _resumeRepository.GetByIdAsync(id);
             if (resume == null)
                 return NotFound("Резюме не найдено");
-            
+    
+            // ОТЛАДКА: проверяем что данные есть
+            if (resume.PdfData == null || resume.PdfData.Length == 0)
+                return BadRequest($"PDF пустой. Size: {resume.PdfData?.Length ?? 0}");
+    
             return File(resume.PdfData, "application/pdf", resume.PdfFilename);
         }
 

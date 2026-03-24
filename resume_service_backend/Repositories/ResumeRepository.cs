@@ -78,33 +78,38 @@ namespace resume_service_backend.Repositories
             return result?.resume_id ?? 0;
         }
 
-        /// <summary>
-        /// Получить полное резюме по ID (с PDF данными и тегами)
-        /// </summary>
         public async Task<Resume?> GetByIdAsync(int id)
         {
             using var connection = new MySqlConnection(_connectionString);
-            
-            // Получаем основную информацию о резюме
-            var resume = await connection.QueryFirstOrDefaultAsync<Resume>(
+    
+            // Временный вариант — получаем как dynamic
+            var result = await connection.QueryFirstOrDefaultAsync<dynamic>(
                 @"SELECT id, email, status, pdf_data, pdf_filename 
-                  FROM resumes WHERE id = @id",
+          FROM resumes WHERE id = @id",
                 new { id }
             );
-            
-            if (resume == null)
+    
+            if (result == null)
                 return null;
-            
-            // ИСПРАВЛЕНО: Получаем теги как объекты Tag, а не строки
+    
+            var resume = new Resume
+            {
+                Id = result.id,
+                Email = result.email,
+                Status = result.status,
+                PdfData = result.pdf_data ?? Array.Empty<byte>(), // Явно приводим
+                PdfFilename = result.pdf_filename
+            };
+    
             var tags = await connection.QueryAsync<Tag>(
                 @"SELECT t.id, t.name, t.category 
-                  FROM tags t
-                  JOIN resume_tags rt ON t.id = rt.tag_id
-                  WHERE rt.resume_id = @id
-                  ORDER BY t.name",
+          FROM tags t
+          JOIN resume_tags rt ON t.id = rt.tag_id
+          WHERE rt.resume_id = @id
+          ORDER BY t.name",
                 new { id }
             );
-            
+    
             resume.Tags = tags.ToList();
             return resume;
         }
