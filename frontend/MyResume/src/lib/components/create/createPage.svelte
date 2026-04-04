@@ -1,6 +1,11 @@
 <script>
+  import { goto } from "$app/navigation";
+  import { base } from '$app/paths';
+  
   let currentStep = 1;
   let totalSteps = 5;
+  let isSubmitting = false;
+  let submitError = '';
   
   function nextStep() {
     if (currentStep < totalSteps) {
@@ -103,14 +108,16 @@
     selectedExpert = id;
   }
 
-  // ========== ДАННЫЕ ДЛЯ ОПЫТА РАБОТЫ ==========
+  // Данные для опыта работы
   let workExperience = [
     {
-      id: Date.now(),
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now(),
       company: '',
       position: '',
-      startDate: '',
-      endDate: '',
+      startMonth: '',
+      startYear: '',
+      endMonth: '',
+      endYear: '',
       current: false,
       description: ''
     }
@@ -120,11 +127,13 @@
     workExperience = [
       ...workExperience,
       {
-        id: Date.now() + Math.random(),
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random(),
         company: '',
         position: '',
-        startDate: '',
-        endDate: '',
+        startMonth: '',
+        startYear: '',
+        endMonth: '',
+        endYear: '',
         current: false,
         description: ''
       }
@@ -140,19 +149,22 @@
   function toggleCurrentJob(item) {
     item.current = !item.current;
     if (item.current) {
-      item.endDate = '';
+      item.endMonth = '';
+      item.endYear = '';
     }
   }
 
-  // ========== ДАННЫЕ ДЛЯ ОБРАЗОВАНИЯ ==========
+  // Данные для образования
   let education = [
     {
-      id: Date.now() + 1,
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + 1,
       institution: '',
       degree: '',
       field: '',
-      startDate: '',
-      endDate: '',
+      startMonth: '',
+      startYear: '',
+      endMonth: '',
+      endYear: '',
       current: false
     }
   ];
@@ -161,12 +173,14 @@
     education = [
       ...education,
       {
-        id: Date.now() + Math.random() + 1,
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random() + 1,
         institution: '',
         degree: '',
         field: '',
-        startDate: '',
-        endDate: '',
+        startMonth: '',
+        startYear: '',
+        endMonth: '',
+        endYear: '',
         current: false
       }
     ];
@@ -181,7 +195,8 @@
   function toggleCurrentEducation(item) {
     item.current = !item.current;
     if (item.current) {
-      item.endDate = '';
+      item.endMonth = '';
+      item.endYear = '';
     }
   }
 
@@ -206,6 +221,104 @@
   // Годы для выбора (от 1980 до текущего)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1979 }, (_, i) => 1980 + i);
+
+  // ========== ФОРМИРОВАНИЕ ДАННЫХ ДЛЯ ОТПРАВКИ ==========
+  function prepareResumeData() {
+    // Форматируем даты для опыта работы
+    const formattedWorkExperience = workExperience.map(exp => ({
+      company: exp.company,
+      position: exp.position,
+      startDate: exp.startYear && exp.startMonth ? `${exp.startYear}-${String(exp.startMonth).padStart(2, '0')}` : null,
+      endDate: exp.current ? null : (exp.endYear && exp.endMonth ? `${exp.endYear}-${String(exp.endMonth).padStart(2, '0')}` : null),
+      current: exp.current,
+      description: exp.description
+    })).filter(exp => exp.company || exp.position); // Только заполненные
+
+    // Форматируем даты для образования
+    const formattedEducation = education.map(edu => ({
+      institution: edu.institution,
+      degree: edu.degree,
+      field: edu.field,
+      startDate: edu.startYear && edu.startMonth ? `${edu.startYear}-${String(edu.startMonth).padStart(2, '0')}` : null,
+      endDate: edu.current ? null : (edu.endYear && edu.endMonth ? `${edu.endYear}-${String(edu.endMonth).padStart(2, '0')}` : null),
+      current: edu.current
+    })).filter(edu => edu.institution); // Только заполненные
+
+    // Формируем полный объект для отправки
+    return {
+      // Основная информация
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      desiredPosition: formData.desiredPosition,
+      email: formData.email,
+      phone: formData.phone,
+      about: formData.about,
+      
+      // Стиль (эксперт)
+      expertStyle: selectedExpert,
+      
+      // Опыт работы и образование
+      workExperience: formattedWorkExperience,
+      education: formattedEducation,
+      
+      // Навыки
+      skills: selectedSkills,
+      
+      // Метаданные
+      createdAt: new Date().toISOString(),
+      template: 'modern' // Позже можно будет выбирать шаблон
+    };
+  }
+
+  // ========== ОТПРАВКА ДАННЫХ НА СЕРВЕР ==========
+  async function submitResume() {
+    // Валидация
+    if (!formData.firstName || !formData.lastName) {
+      submitError = 'Укажите имя и фамилию';
+      return;
+    }
+    
+    if (!formData.email) {
+      submitError = 'Укажите email';
+      return;
+    }
+    
+    if (!selectedExpert) {
+      submitError = 'Выберите стиль резюме';
+      return;
+    }
+    
+    isSubmitting = true;
+    submitError = '';
+    
+    try {
+      const resumeData = prepareResumeData();
+      
+      // Отправляем на наш будущий эндпоинт
+      const response = await fetch('/api/resumes/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(resumeData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка при создании резюме');
+      }
+      
+      const result = await response.json();
+      
+      // Перенаправляем на страницу просмотра/скачивания
+      goto(`${base}/resume/${result.id}/view`);
+      
+    } catch (error) {
+      console.error('Ошибка:', error);
+      submitError = 'Не удалось создать резюме. Попробуйте позже.';
+    } finally {
+      isSubmitting = false;
+    }
+  }
 </script>
 
 <div class="resume-creator">
@@ -626,6 +739,13 @@
     </div>
   {/if}
 
+  <!-- Сообщение об ошибке -->
+  {#if submitError}
+    <div class="error-message">
+      {submitError}
+    </div>
+  {/if}
+
   <!-- Кнопки навигации -->
   <div class="navigation-buttons">
     {#if currentStep > 1}
@@ -639,8 +759,16 @@
         ДАЛЕЕ →
       </button>
     {:else}
-      <button class="nav-button submit">
-        СОЗДАТЬ РЕЗЮМЕ
+      <button 
+        class="nav-button submit" 
+        on:click={submitResume}
+        disabled={isSubmitting}
+      >
+        {#if isSubmitting}
+          СОЗДАНИЕ...
+        {:else}
+          СОЗДАТЬ РЕЗЮМЕ
+        {/if}
       </button>
     {/if}
   </div>
@@ -1032,6 +1160,16 @@
     line-height: 1.5;
   }
 
+  /* Ошибка */
+  .error-message {
+    background: #fee2e2;
+    border-left: 4px solid #ef4444;
+    color: #b91c1c;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+  }
+
   /* Кнопки навигации */
   .navigation-buttons {
     display: flex;
@@ -1052,12 +1190,17 @@
     transition: all 0.2s;
   }
 
+  .nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .nav-button.prev {
     background: #f1f5f9;
     color: #475569;
   }
 
-  .nav-button.prev:hover {
+  .nav-button.prev:hover:not(:disabled) {
     background: #e2e8f0;
   }
 
@@ -1066,7 +1209,7 @@
     color: white;
   }
 
-  .nav-button.next:hover {
+  .nav-button.next:hover:not(:disabled) {
     background: #1d4ed8;
     transform: translateX(2px);
   }
@@ -1076,7 +1219,7 @@
     color: white;
   }
 
-  .nav-button.submit:hover {
+  .nav-button.submit:hover:not(:disabled) {
     background: rgba(255, 0, 17, 0.63);
   }
 
