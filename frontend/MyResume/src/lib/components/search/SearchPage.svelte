@@ -1,84 +1,224 @@
+<script>
+  import { onMount } from 'svelte';
+
+  let loading = false;
+  let searchResults = [];
+  let searchPerformed = false;
+
+  // Теги из БД
+  let tagsByCategory = {};
+  let allTags = [];
+  let selectedTagIds = [];
+
+  const API_BASE_URL = 'http://localhost:5052';
+
+  // Категории для отображения (порядок и названия)
+  const categoryDisplayNames = {
+    'frontend': 'Frontend',
+    'backend': 'Backend',
+    'database': 'Базы данных'
+  };
+
+  // Загрузка тегов из БД
+  async function loadTags() {
+    try {
+      // Загружаем теги по каждой категории
+      const categories = ['frontend', 'backend', 'database'];
+
+      for (const category of categories) {
+        const response = await fetch(`${API_BASE_URL}/api/tags/category/${category}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          tagsByCategory[category] = data;
+          allTags = [...allTags, ...data];
+        }
+      }
+
+    } catch (err) {
+      console.error('Ошибка загрузки тегов:', err);
+    }
+  }
+
+  // Поиск резюме по выбранным тегам
+  async function searchResumes() {
+    if (selectedTagIds.length === 0) {
+      // Если теги не выбраны, показываем все публичные резюме
+      await loadAllPublicResumes();
+      return;
+    }
+
+    loading = true;
+    searchPerformed = true;
+
+    try {
+      const tagIdsParam = selectedTagIds.join(',');
+      const response = await fetch(`${API_BASE_URL}/api/resumes/public?tagIds=${tagIdsParam}`);
+
+      if (response.ok) {
+        searchResults = await response.json();
+      } else {
+        searchResults = [];
+      }
+
+    } catch (err) {
+      console.error('Ошибка поиска:', err);
+      searchResults = [];
+    } finally {
+      loading = false;
+    }
+  }
+
+  // Загрузка всех публичных резюме
+  async function loadAllPublicResumes() {
+    loading = true;
+    searchPerformed = true;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/resumes/public`);
+
+      if (response.ok) {
+        searchResults = await response.json();
+      } else {
+        searchResults = [];
+      }
+
+    } catch (err) {
+      console.error('Ошибка загрузки:', err);
+      searchResults = [];
+    } finally {
+      loading = false;
+    }
+  }
+
+  // Переключение выбора тега
+  function toggleTag(tagId) {
+    if (selectedTagIds.includes(tagId)) {
+      selectedTagIds = selectedTagIds.filter(id => id !== tagId);
+    } else {
+      selectedTagIds = [...selectedTagIds, tagId];
+    }
+
+    // Автоматически выполняем поиск при изменении фильтра
+    searchResumes();
+  }
+
+  // Сброс всех фильтров
+  function resetFilters() {
+    selectedTagIds = [];
+    searchResumes();
+  }
+
+  // Скачивание PDF
+  async function downloadResume(resumeId, filename) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || `resume_${resumeId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error('Ошибка скачивания');
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+    }
+  }
+
+  onMount(async () => {
+    await loadTags();
+    await loadAllPublicResumes();
+  });
+</script>
+
 <div class="search-page">
   <!-- Заголовок -->
   <div class="search-header">
     <h1 class="search-title">НАЙДИТЕ ИДЕАЛЬНОЕ РЕЗЮМЕ</h1>
-    <p class="search-subtitle">ПОИСК ПО КЛЮЧЕВЫМ СЛОВАМ, ДОЛЖНОСТИ ИЛИ НАВЫКАМ.</p>
+    <p class="search-subtitle">ВЫБЕРИТЕ НАВЫКИ ДЛЯ ПОИСКА</p>
   </div>
 
-  <!-- Поисковая строка -->
-  <div class="search-bar">
-    <input type="text" class="search-input" placeholder="Введите ключевые слова...">
-    <button class="search-button">Найти</button>
-  </div>
-
-  <!-- Категории -->
+  <!-- Фильтры по категориям тегов -->
   <div class="categories-section">
-    <div class="categories-grid">
-      <span class="category-tag">INTERFACE DESIGN</span>
-      <span class="category-tag">PROJECT MANAGEMENT</span>
-      <span class="category-tag">MARKETING</span>
-      <span class="category-tag">COPYWRITING</span>
-      <span class="category-tag">NODE.JS</span>
-      <span class="category-tag">DEVOPs</span>
-      <span class="category-tag">PYTHON</span>
-      <span class="category-tag">DATA SCIENCE</span>
-      <span class="category-tag">React Native</span>
+    <div class="filters-header">
+      <h3 class="filters-title">Фильтры по навыкам</h3>
+      {#if selectedTagIds.length > 0}
+        <button class="reset-filters-btn" on:click={resetFilters}>Сбросить все</button>
+      {/if}
     </div>
+
+    {#each Object.keys(tagsByCategory) as category}
+      {#if tagsByCategory[category] && tagsByCategory[category].length > 0}
+        <div class="filter-category">
+          <h4 class="category-title">{categoryDisplayNames[category] || category}</h4>
+          <div class="filter-tags">
+            {#each tagsByCategory[category] as tag}
+              <button
+                      class="filter-tag {selectedTagIds.includes(tag.id) ? 'active' : ''}"
+                      on:click={() => toggleTag(tag.id)}
+              >
+                {tag.name}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    {/each}
   </div>
 
-  <!-- Топ резюме -->
-  <section class="top-resumes-section">
-    <h2 class="section-title">Топ Резюме</h2>
-    
-    <div class="resumes-grid">
-      <!-- Карточка 1 -->
-      <div class="resume-card">
-        <div class="card-content">
-          <h3 class="card-title">SENIOR PRODUCT DESIGNER</h3>
-          <div class="card-tags">
-            <span class="tag">INTERFACE DESIGN</span>
-            <span class="tag">FIGMA</span>
-            <span class="tag">PROTOTYPING</span>
-          </div>
-        </div>
-        <button class="download-btn">
-          <span class="download-icon">⬇️</span>
-          <span class="download-text">Скачать</span>
-        </button>
-      </div>
+  <!-- Результаты поиска -->
+  <section class="results-section">
+    <h2 class="section-title">
+      {#if searchPerformed}
+        Результаты поиска ({searchResults.length})
+      {:else}
+        Топ резюме
+      {/if}
+    </h2>
 
-      <!-- Карточка 2 -->
-      <div class="resume-card">
-        <div class="card-content">
-          <h3 class="card-title">FULL STACK DEVELOPER</h3>
-          <div class="card-tags">
-            <span class="tag">NODE.JS</span>
-            <span class="tag">REACT NATIVE</span>
-            <span class="tag">DEVOPs</span>
-          </div>
-        </div>
-        <button class="download-btn">
-          <span class="download-icon">⬇️</span>
-          <span class="download-text">Скачать</span>
-        </button>
+    {#if loading}
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка резюме...</p>
       </div>
-
-      <!-- Карточка 3 -->
-      <div class="resume-card">
-        <div class="card-content">
-          <h3 class="card-title">PROJECT MANAGER</h3>
-          <div class="card-tags">
-            <span class="tag">PROJECT MANAGEMENT</span>
-            <span class="tag">AGILE</span>
-            <span class="tag">SCRUM</span>
-          </div>
-        </div>
-        <button class="download-btn">
-          <span class="download-icon">⬇️</span>
-          <span class="download-text">Скачать</span>
-        </button>
+    {:else if searchResults.length === 0 && searchPerformed}
+      <div class="empty-state">
+        <p>По вашему запросу ничего не найдено</p>
+        <p class="empty-hint">Попробуйте выбрать другие навыки</p>
       </div>
-    </div>
+    {:else}
+      <div class="resumes-grid">
+        {#each searchResults as resume}
+          <div class="resume-card">
+            <div class="card-content">
+              <h3 class="card-title">{resume.name || 'Резюме'}</h3>
+              <div class="card-email">{resume.email}</div>
+              {#if resume.tags}
+                <div class="card-tags">
+                  {#each resume.tags.split(', ') as tag}
+                    <span class="tag">{tag}</span>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+            <button
+                    class="download-btn"
+                    on:click={() => downloadResume(resume.id, resume.name)}
+            >
+              <span class="download-icon">⬇️</span>
+              <span class="download-text">Скачать PDF</span>
+            </button>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </section>
 </div>
 
@@ -111,49 +251,7 @@
     margin: 0;
   }
 
-  /* Поисковая строка */
-  .search-bar {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 3rem;
-    align-items: center;
-  }
-
-  .search-input {
-    flex: 1;
-    padding: 1rem 1.5rem;
-    font-size: 1.35rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    outline: none;
-    transition: all 0.2s;
-    background: white;
-  }
-
-  .search-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-
-  .search-button {
-    background-color: rgba(193, 18, 31, 0.63);
-    border: none;
-    border-radius: 8px;
-    padding: 1rem 2.5rem;
-    color: white;
-    font-size: 1.35rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .search-button:hover {
-    background-color: rgba(255, 0, 17, 0.63);
-    transform: translateY(-1px);
-  }
-
-  /* Категории */
+  /* Фильтры */
   .categories-section {
     margin-bottom: 3rem;
     padding: 2rem;
@@ -162,33 +260,81 @@
     border: 1px solid rgba(102, 155, 188, 0.2);
   }
 
-  .categories-grid {
+  .filters-header {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
-    justify-content: center;
   }
 
-  .category-tag {
-    background: #e0f2fe;
-    color: #0369a1;
+  .filters-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .reset-filters-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .reset-filters-btn:hover {
+    background: #fee2e2;
+  }
+
+  .filter-category {
+    margin-bottom: 1.5rem;
+  }
+
+  .category-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .filter-tag {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
     padding: 0.5rem 1.25rem;
     border-radius: 999px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
     transition: all 0.2s;
-    cursor: default;
   }
 
-  .category-tag:hover {
-    transform: scale(1.05);
-    background: #bae6fd;
+  .filter-tag:hover {
+    background: #e2e8f0;
+    transform: scale(1.02);
   }
 
-  /* Топ резюме */
-  .top-resumes-section {
+  .filter-tag.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+  }
+
+  /* Результаты */
+  .results-section {
     margin-bottom: 3rem;
   }
 
@@ -224,11 +370,11 @@
   .card-content {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .card-title {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bold;
     margin: 0;
     color: #1e293b;
@@ -236,20 +382,25 @@
     padding-bottom: 0.75rem;
   }
 
+  .card-email {
+    font-size: 0.85rem;
+    color: #64748b;
+    word-break: break-all;
+  }
+
   .card-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .tag {
     background: #f1f5f9;
     color: #475569;
-    padding: 0.35rem 1rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 999px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
 
   .download-btn {
@@ -275,170 +426,64 @@
     box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
   }
 
-  .download-icon {
+  /* Состояния */
+  .loading-state, .empty-state {
+    text-align: center;
+    padding: 3rem;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .empty-state p {
+    color: #64748b;
     font-size: 1.1rem;
   }
 
-  .download-text {
-    font-size: 0.95rem;
+  .empty-hint {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
   }
 
-  /* ===== АДАПТИВНОСТЬ ===== */
-
-  /* 1300px */
-  @media (max-width: 1300px) {
-    .search-title {
-      font-size: 2.2rem;
-    }
-    
-    .search-subtitle {
-      font-size: 1.2rem;
-    }
-    
-    .search-input,
-    .search-button {
-      font-size: 1.2rem;
-    }
-    
-    .card-title {
-      font-size: 1.4rem;
-    }
-  }
-
-  /* 1080px */
-  @media (max-width: 1080px) {
-    .resumes-grid {
-      gap: 1.5rem;
-    }
-    
-    .card-title {
-      font-size: 1.3rem;
-    }
-    
-    .category-tag {
-      font-size: 1rem;
-      padding: 0.4rem 1rem;
-    }
-  }
-
-  /* 900px */
+  /* Адаптивность */
   @media (max-width: 900px) {
-    .search-bar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    
-    .search-button {
-      width: 100%;
-    }
-    
     .resumes-grid {
       grid-template-columns: repeat(2, 1fr);
     }
-    
-    .categories-section {
-      padding: 1.5rem;
-    }
   }
 
-  /* 650px */
   @media (max-width: 650px) {
-    .search-title {
-      font-size: 1.8rem;
-    }
-    
-    .search-subtitle {
-      font-size: 1rem;
-    }
-    
-    .search-input,
-    .search-button {
-      font-size: 1rem;
-      padding: 0.8rem 1.2rem;
-    }
-    
-    .categories-grid {
-      gap: 0.75rem;
-    }
-    
-    .category-tag {
-      font-size: 0.9rem;
-      padding: 0.4rem 1rem;
-    }
-    
-    .resumes-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .resume-card {
-      flex-direction: column;
-    }
-    
-    .card-title {
-      font-size: 1.25rem;
-    }
-    
-    .download-btn {
-      width: 100%;
-    }
-  }
-
-  /* 475px */
-  @media (max-width: 475px) {
     .search-page {
       padding: 1rem;
     }
-    
+
     .search-title {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
     }
-    
+
     .search-subtitle {
-      font-size: 0.9rem;
-    }
-    
-    .search-input,
-    .search-button {
-      font-size: 0.9rem;
-      padding: 0.7rem 1rem;
-    }
-    
-    .categories-section {
-      padding: 1rem;
-    }
-    
-    .category-tag {
-      font-size: 0.8rem;
-      padding: 0.3rem 0.8rem;
-    }
-    
-    .section-title {
-      font-size: 1.5rem;
-    }
-    
-    .resume-card {
-      padding: 1rem;
-    }
-    
-    .card-title {
-      font-size: 1.1rem;
-    }
-    
-    .tag {
-      font-size: 0.8rem;
-      padding: 0.25rem 0.75rem;
-    }
-    
-    .download-btn {
-      padding: 0.6rem 0.8rem;
-    }
-    
-    .download-icon {
       font-size: 1rem;
     }
-    
-    .download-text {
-      font-size: 0.85rem;
+
+    .resumes-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filters-header {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>

@@ -1,24 +1,327 @@
 <script>
   import { goto } from "$app/navigation";
   import { base } from '$app/paths';
-  
+  import { onMount } from 'svelte';
+
   let currentStep = 1;
   let totalSteps = 5;
   let isSubmitting = false;
   let submitError = '';
-  
+
+  // Валидационные ошибки для каждого шага
+  let stepErrors = {
+    step1: '',
+    step2: '',
+    step3: '',
+    step4: '',
+    step5: ''
+  };
+
+  // API базовый URL
+  const API_BASE_URL = 'http://localhost:5052';
+
+  // Динамические теги из БД
+  let tagsByCategory = {};
+  let allTags = [];
+  let selectedSkills = [];
+
+  // Категории для отображения
+  const categoryDisplayNames = {
+    'frontend': 'Frontend',
+    'backend': 'Backend',
+    'database': 'Базы данных'
+  };
+
+  const categoryOrder = ['frontend', 'backend', 'database'];
+
+  // Загрузка тегов из БД для отображения
+  async function loadTags() {
+    try {
+      const categories = ['frontend', 'backend', 'database'];
+
+      for (const category of categories) {
+        const response = await fetch(`${API_BASE_URL}/api/tags/category/${category}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          tagsByCategory[category] = data;
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки тегов:', err);
+    }
+  }
+
+  // Загрузка всех тегов для маппинга названий в ID
+  async function loadAllTagsForMapping() {
+    try {
+      const categories = ['frontend', 'backend', 'database'];
+      const all = [];
+
+      for (const category of categories) {
+        const response = await fetch(`${API_BASE_URL}/api/tags/category/${category}`);
+        if (response.ok) {
+          const data = await response.json();
+          all.push(...data);
+        }
+      }
+
+      allTags = all;
+    } catch (err) {
+      console.error('Ошибка загрузки тегов для маппинга:', err);
+    }
+  }
+
+  // Преобразование названий навыков в ID тегов (строку через запятую)
+  function getTagIdsFromSkills(skills) {
+    if (!skills || skills.length === 0) return '';
+
+    const tagIds = skills
+            .map(skill => {
+              const tag = allTags.find(t => t.name === skill);
+              return tag ? tag.id : null;
+            })
+            .filter(id => id !== null);
+
+    return tagIds.join(',');
+  }
+
+  function toggleSkill(skill) {
+    const index = selectedSkills.indexOf(skill);
+    if (index === -1) {
+      selectedSkills = [...selectedSkills, skill];
+    } else {
+      selectedSkills = selectedSkills.filter(s => s !== skill);
+    }
+    validateStep5();
+  }
+
+  // ========== ВАЛИДАЦИЯ ШАГА 1 ==========
+  function validateStep1() {
+    if (!selectedExpert) {
+      stepErrors.step1 = 'Выберите стиль резюме';
+      return false;
+    }
+    stepErrors.step1 = '';
+    return true;
+  }
+
+  // ========== ВАЛИДАЦИЯ ШАГА 2 ==========
+  function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  function validatePhone(phone) {
+    if (!phone) return true;
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,20}$/;
+    return phoneRegex.test(phone);
+  }
+
+  function validateStep2() {
+    const errors = [];
+
+    if (!formData.firstName.trim()) {
+      errors.push('Имя обязательно');
+    } else if (formData.firstName.trim().length < 2) {
+      errors.push('Имя должно содержать минимум 2 символа');
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.push('Фамилия обязательна');
+    } else if (formData.lastName.trim().length < 2) {
+      errors.push('Фамилия должна содержать минимум 2 символа');
+    }
+
+    if (!formData.email.trim()) {
+      errors.push('Email обязателен');
+    } else if (!validateEmail(formData.email.trim())) {
+      errors.push('Введите корректный email');
+    }
+
+    if (formData.phone && !validatePhone(formData.phone)) {
+      errors.push('Введите корректный номер телефона');
+    }
+
+    stepErrors.step2 = errors.join(', ');
+    return errors.length === 0;
+  }
+
+  // ========== ВАЛИДАЦИЯ ШАГА 3 (Опыт работы) ==========
+  const MIN_YEAR = 1900;
+  const MAX_YEAR = new Date().getFullYear();
+
+  function validateDate(year, month, allowFuture = false) {
+    if (!year || !month) return true;
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+
+    if (yearNum < MIN_YEAR) return false;
+    if (!allowFuture && yearNum > MAX_YEAR) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+
+    return true;
+  }
+
+  function isDateBefore(startYear, startMonth, endYear, endMonth) {
+    if (!startYear || !startMonth || !endYear || !endMonth) return true;
+
+    const start = new Date(parseInt(startYear), parseInt(startMonth) - 1);
+    const end = new Date(parseInt(endYear), parseInt(endMonth) - 1);
+
+    return start <= end;
+  }
+
+  function validateStep3() {
+    const errors = [];
+
+    for (let i = 0; i < workExperience.length; i++) {
+      const exp = workExperience[i];
+      const blockErrors = [];
+
+      if (exp.company && exp.company.length > 100) {
+        blockErrors.push('название компании слишком длинное');
+      }
+
+      if (exp.position && exp.position.length > 100) {
+        blockErrors.push('должность слишком длинная');
+      }
+
+      if (exp.startYear || exp.startMonth) {
+        if (!exp.startYear) blockErrors.push('укажите год начала');
+        if (!exp.startMonth) blockErrors.push('укажите месяц начала');
+
+        if (exp.startYear && !validateDate(exp.startYear, exp.startMonth, false)) {
+          blockErrors.push(`год начала должен быть от ${MIN_YEAR} до ${MAX_YEAR}`);
+        }
+      }
+
+      if (!exp.current && (exp.endYear || exp.endMonth)) {
+        if (!exp.endYear) blockErrors.push('укажите год окончания');
+        if (!exp.endMonth) blockErrors.push('укажите месяц окончания');
+
+        if (exp.endYear && !validateDate(exp.endYear, exp.endMonth, false)) {
+          blockErrors.push(`год окончания должен быть от ${MIN_YEAR} до ${MAX_YEAR}`);
+        }
+      }
+
+      if (exp.startYear && exp.startMonth && exp.endYear && exp.endMonth && !exp.current) {
+        if (!isDateBefore(exp.startYear, exp.startMonth, exp.endYear, exp.endMonth)) {
+          blockErrors.push('дата окончания не может быть раньше даты начала');
+        }
+      }
+
+      if (blockErrors.length > 0) {
+        errors.push(`Место работы ${i + 1}: ${blockErrors.join(', ')}`);
+      }
+    }
+
+    stepErrors.step3 = errors.join('; ');
+    return errors.length === 0;
+  }
+
+  // ========== ВАЛИДАЦИЯ ШАГА 4 (Образование) ==========
+  function validateStep4() {
+    const errors = [];
+
+    for (let i = 0; i < education.length; i++) {
+      const edu = education[i];
+      const blockErrors = [];
+
+      if (edu.institution && edu.institution.length > 200) {
+        blockErrors.push('название слишком длинное');
+      }
+
+      if (edu.field && edu.field.length > 100) {
+        blockErrors.push('специальность слишком длинная');
+      }
+
+      if (edu.startYear || edu.startMonth) {
+        if (!edu.startYear) blockErrors.push('укажите год начала');
+        if (!edu.startMonth) blockErrors.push('укажите месяц начала');
+
+        if (edu.startYear && !validateDate(edu.startYear, edu.startMonth, false)) {
+          blockErrors.push(`год начала должен быть от ${MIN_YEAR} до ${MAX_YEAR}`);
+        }
+      }
+
+      if (!edu.current && (edu.endYear || edu.endMonth)) {
+        if (!edu.endYear) blockErrors.push('укажите год окончания');
+        if (!edu.endMonth) blockErrors.push('укажите месяц окончания');
+
+        if (edu.endYear && !validateDate(edu.endYear, edu.endMonth, false)) {
+          blockErrors.push(`год окончания должен быть от ${MIN_YEAR} до ${MAX_YEAR}`);
+        }
+      }
+
+      if (edu.startYear && edu.startMonth && edu.endYear && edu.endMonth && !edu.current) {
+        if (!isDateBefore(edu.startYear, edu.startMonth, edu.endYear, edu.endMonth)) {
+          blockErrors.push('дата окончания не может быть раньше даты начала');
+        }
+      }
+
+      if (blockErrors.length > 0) {
+        errors.push(`Образование ${i + 1}: ${blockErrors.join(', ')}`);
+      }
+    }
+
+    stepErrors.step4 = errors.join('; ');
+    return errors.length === 0;
+  }
+
+  // ========== ВАЛИДАЦИЯ ШАГА 5 (Навыки) ==========
+  function validateStep5() {
+    if (selectedSkills.length === 0) {
+      stepErrors.step5 = 'Выберите хотя бы один навык';
+      return false;
+    }
+    stepErrors.step5 = '';
+    return true;
+  }
+
+  // Общая валидация перед отправкой
+  function validateAllSteps() {
+    const step1Valid = validateStep1();
+    const step2Valid = validateStep2();
+    const step3Valid = validateStep3();
+    const step4Valid = validateStep4();
+    const step5Valid = validateStep5();
+
+    return step1Valid && step2Valid && step3Valid && step4Valid && step5Valid;
+  }
+
   function nextStep() {
-    if (currentStep < totalSteps) {
+    let currentValid = false;
+
+    switch (currentStep) {
+      case 1:
+        currentValid = validateStep1();
+        break;
+      case 2:
+        currentValid = validateStep2();
+        break;
+      case 3:
+        currentValid = validateStep3();
+        break;
+      case 4:
+        currentValid = validateStep4();
+        break;
+      case 5:
+        currentValid = validateStep5();
+        break;
+    }
+
+    if (currentValid && currentStep < totalSteps) {
       currentStep++;
     }
   }
-  
+
   function prevStep() {
     if (currentStep > 1) {
       currentStep--;
     }
   }
-  
+
   // Данные формы
   let formData = {
     firstName: '',
@@ -28,58 +331,6 @@
     phone: '',
     about: ''
   };
-  
-  // Данные для навыков
-  let selectedSkills = [];
-  let customSkill = '';
-  
-  // Популярные навыки
-  const popularSkills = [
-    'JavaScript', 'Python', 'React', 'Node.js', 'TypeScript',
-    'HTML/CSS', 'SQL', 'Git', 'UI/UX', 'Figma',
-    'Project Management', 'Agile', 'Scrum', 'Marketing', 'SEO',
-    'Copywriting', 'Data Analysis', 'DevOps', 'AWS', 'Docker'
-  ];
-  
-  // Категории навыков
-  const skillCategories = [
-    {
-      name: 'Frontend',
-      skills: ['React', 'Vue', 'Angular', 'JavaScript', 'TypeScript', 'HTML/CSS', 'Svelte']
-    },
-    {
-      name: 'Backend',
-      skills: ['Node.js', 'Python', 'Java', 'C#', 'PHP', 'Go', 'Ruby']
-    },
-    {
-      name: 'Дизайн',
-      skills: ['Figma', 'UI/UX', 'Adobe XD', 'Photoshop', 'Illustrator', 'Sketch']
-    },
-    {
-      name: 'Менеджмент',
-      skills: ['Project Management', 'Agile', 'Scrum', 'Product Management', 'Team Leadership']
-    }
-  ];
-  
-  function toggleSkill(skill) {
-    const index = selectedSkills.indexOf(skill);
-    if (index === -1) {
-      selectedSkills = [...selectedSkills, skill];
-    } else {
-      selectedSkills = selectedSkills.filter(s => s !== skill);
-    }
-  }
-  
-  function addCustomSkill() {
-    if (customSkill.trim() && !selectedSkills.includes(customSkill.trim())) {
-      selectedSkills = [...selectedSkills, customSkill.trim()];
-      customSkill = '';
-    }
-  }
-  
-  function removeSkill(skill) {
-    selectedSkills = selectedSkills.filter(s => s !== skill);
-  }
 
   // Данные для экспертов
   let selectedExpert = null;
@@ -106,6 +357,7 @@
 
   function selectExpert(id) {
     selectedExpert = id;
+    validateStep1();
   }
 
   // Данные для опыта работы
@@ -143,6 +395,7 @@
   function removeWorkExperience(id) {
     if (workExperience.length > 1) {
       workExperience = workExperience.filter(item => item.id !== id);
+      validateStep3();
     }
   }
 
@@ -152,6 +405,7 @@
       item.endMonth = '';
       item.endYear = '';
     }
+    validateStep3();
   }
 
   // Данные для образования
@@ -189,6 +443,7 @@
   function removeEducation(id) {
     if (education.length > 1) {
       education = education.filter(item => item.id !== id);
+      validateStep4();
     }
   }
 
@@ -198,6 +453,7 @@
       item.endMonth = '';
       item.endYear = '';
     }
+    validateStep4();
   }
 
   // Степени образования
@@ -218,9 +474,8 @@
     'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
   ];
 
-  // Годы для выбора (от 1980 до текущего)
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1979 }, (_, i) => 1980 + i);
+  // Годы для выбора (от 1900 до текущего)
+  const years = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => MIN_YEAR + i).reverse();
 
   // ========== ФОРМИРОВАНИЕ ДАННЫХ ДЛЯ ОТПРАВКИ ==========
   function prepareResumeData() {
@@ -232,7 +487,7 @@
       endDate: exp.current ? null : (exp.endYear && exp.endMonth ? `${exp.endYear}-${String(exp.endMonth).padStart(2, '0')}` : null),
       current: exp.current,
       description: exp.description
-    })).filter(exp => exp.company || exp.position); // Только заполненные
+    })).filter(exp => exp.company || exp.position);
 
     // Форматируем даты для образования
     const formattedEducation = education.map(edu => ({
@@ -242,83 +497,70 @@
       startDate: edu.startYear && edu.startMonth ? `${edu.startYear}-${String(edu.startMonth).padStart(2, '0')}` : null,
       endDate: edu.current ? null : (edu.endYear && edu.endMonth ? `${edu.endYear}-${String(edu.endMonth).padStart(2, '0')}` : null),
       current: edu.current
-    })).filter(edu => edu.institution); // Только заполненные
+    })).filter(edu => edu.institution);
 
-    // Формируем полный объект для отправки
+    // Преобразуем навыки в ID тегов
+    const tagIds = getTagIdsFromSkills(selectedSkills);
+
     return {
-      // Основная информация
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      desiredPosition: formData.desiredPosition,
-      email: formData.email,
-      phone: formData.phone,
-      about: formData.about,
-      
-      // Стиль (эксперт)
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      desiredPosition: formData.desiredPosition.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      about: formData.about.trim(),
       expertStyle: selectedExpert,
-      
-      // Опыт работы и образование
       workExperience: formattedWorkExperience,
       education: formattedEducation,
-      
-      // Навыки
       skills: selectedSkills,
-      
-      // Метаданные
+      tagIds: tagIds,
       createdAt: new Date().toISOString(),
-      template: 'modern' // Позже можно будет выбирать шаблон
+      template: 'modern'
     };
   }
 
   // ========== ОТПРАВКА ДАННЫХ НА СЕРВЕР ==========
   async function submitResume() {
-    // Валидация
-    if (!formData.firstName || !formData.lastName) {
-      submitError = 'Укажите имя и фамилию';
+    if (!validateAllSteps()) {
+      submitError = 'Пожалуйста, исправьте ошибки в форме';
       return;
     }
-    
-    if (!formData.email) {
-      submitError = 'Укажите email';
-      return;
-    }
-    
-    if (!selectedExpert) {
-      submitError = 'Выберите стиль резюме';
-      return;
-    }
-    
+
     isSubmitting = true;
     submitError = '';
-    
+
     try {
       const resumeData = prepareResumeData();
-      
-      // Отправляем на наш будущий эндпоинт
-      const response = await fetch('/api/resumes/generate', {
+
+      const response = await fetch(`${API_BASE_URL}/api/resumes/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(resumeData)
       });
-      
+
       if (!response.ok) {
-        throw new Error('Ошибка при создании резюме');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка при создании резюме');
       }
-      
+
       const result = await response.json();
-      
-      // Перенаправляем на страницу просмотра/скачивания
-      goto(`${base}/resume/${result.id}/view`);
-      
+
+      goto(`${base}/profile`);
+
     } catch (error) {
       console.error('Ошибка:', error);
-      submitError = 'Не удалось создать резюме. Попробуйте позже.';
+      submitError = error.message || 'Не удалось создать резюме. Попробуйте позже.';
     } finally {
       isSubmitting = false;
     }
   }
+
+  onMount(async () => {
+    await loadTags();
+    await loadAllTagsForMapping();
+  });
 </script>
 
 <div class="resume-creator">
@@ -331,7 +573,7 @@
         <span class="step-subtitle">Эксперт</span>
       </div>
     </div>
-    
+
     <div class="step-item" class:active={currentStep === 2}>
       <span class="step-number">2</span>
       <div class="step-text">
@@ -339,7 +581,7 @@
         <span class="step-subtitle">Кто вы?</span>
       </div>
     </div>
-    
+
     <div class="step-item" class:active={currentStep === 3}>
       <span class="step-number">3</span>
       <div class="step-text">
@@ -347,7 +589,7 @@
         <span class="step-subtitle">История работы</span>
       </div>
     </div>
-    
+
     <div class="step-item" class:active={currentStep === 4}>
       <span class="step-number">4</span>
       <div class="step-text">
@@ -355,7 +597,7 @@
         <span class="step-subtitle">Учеба</span>
       </div>
     </div>
-    
+
     <div class="step-item" class:active={currentStep === 5}>
       <span class="step-number">5</span>
       <div class="step-text">
@@ -370,13 +612,13 @@
     <div class="step-content">
       <h2 class="content-title">Выберите стиль резюме</h2>
       <p class="content-subtitle">Наш виртуальный эксперт поможет вам оформить резюме в выбранном ключе.</p>
-      
+
       <div class="experts-grid">
         {#each experts as expert}
-          <button 
-            type="button" 
-            class="expert-card {selectedExpert === expert.id ? 'selected' : ''}"
-            on:click={() => selectExpert(expert.id)}
+          <button
+                  type="button"
+                  class="expert-card {selectedExpert === expert.id ? 'selected' : ''}"
+                  on:click={() => selectExpert(expert.id)}
           >
             <div class="expert-icon">{expert.icon}</div>
             <h3 class="expert-name">{expert.name}</h3>
@@ -384,6 +626,10 @@
           </button>
         {/each}
       </div>
+
+      {#if stepErrors.step1}
+        <div class="error-message step-error">{stepErrors.step1}</div>
+      {/if}
     </div>
   {/if}
 
@@ -392,68 +638,75 @@
     <div class="step-content">
       <h2 class="content-title">Начнем с основ</h2>
       <p class="content-subtitle">Работодатели должны знать, как с вами связаться.</p>
-      
+
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Имя</label>
-          <input 
-            type="text" 
-            class="form-input" 
-            bind:value={formData.firstName}
-            placeholder="Иван"
+          <label class="form-label">Имя *</label>
+          <input
+                  type="text"
+                  class="form-input"
+                  bind:value={formData.firstName}
+                  on:input={validateStep2}
+                  placeholder="Иван"
           >
         </div>
-        
+
         <div class="form-group">
-          <label class="form-label">Фамилия</label>
-          <input 
-            type="text" 
-            class="form-input" 
-            bind:value={formData.lastName}
-            placeholder="Иванов"
+          <label class="form-label">Фамилия *</label>
+          <input
+                  type="text"
+                  class="form-input"
+                  bind:value={formData.lastName}
+                  on:input={validateStep2}
+                  placeholder="Иванов"
           >
         </div>
-        
+
         <div class="form-group full-width">
           <label class="form-label">Желаемая должность</label>
-          <input 
-            type="text" 
-            class="form-input" 
-            bind:value={formData.desiredPosition}
-            placeholder="Например Старший Продуктовый Дизайнер"
+          <input
+                  type="text"
+                  class="form-input"
+                  bind:value={formData.desiredPosition}
+                  placeholder="Например Старший Продуктовый Дизайнер"
           >
         </div>
-        
+
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input 
-            type="email" 
-            class="form-input" 
-            bind:value={formData.email}
-            placeholder="ivan@example.com"
+          <label class="form-label">Email *</label>
+          <input
+                  type="email"
+                  class="form-input"
+                  bind:value={formData.email}
+                  on:input={validateStep2}
+                  placeholder="ivan@example.com"
           >
         </div>
-        
+
         <div class="form-group">
           <label class="form-label">Телефон</label>
-          <input 
-            type="tel" 
-            class="form-input" 
-            bind:value={formData.phone}
-            placeholder="+7 (999) 000-00-00"
+          <input
+                  type="tel"
+                  class="form-input"
+                  bind:value={formData.phone}
+                  on:input={validateStep2}
+                  placeholder="+7 (999) 000-00-00"
           >
         </div>
-        
+
         <div class="form-group full-width">
           <label class="form-label">О себе</label>
-          <textarea 
-            class="form-textarea" 
-            bind:value={formData.about}
-            placeholder="Расскажите о себе и своих целях..."
-            rows="4"
+          <textarea
+                  class="form-textarea"
+                  bind:value={formData.about}
+                  rows="4"
           ></textarea>
         </div>
       </div>
+
+      {#if stepErrors.step2}
+        <div class="error-message step-error">{stepErrors.step2}</div>
+      {/if}
     </div>
   {/if}
 
@@ -462,51 +715,53 @@
     <div class="step-content">
       <h2 class="content-title">Опыт работы</h2>
       <p class="content-subtitle">Добавьте места работы</p>
-      
+
       {#each workExperience as exp, index}
         <div class="experience-block">
           <div class="block-header">
             <h3 class="block-title">Место работы {index + 1}</h3>
             {#if workExperience.length > 1}
-              <button 
-                class="remove-block" 
-                on:click={() => removeWorkExperience(exp.id)}
-                title="Удалить"
+              <button
+                      class="remove-block"
+                      on:click={() => removeWorkExperience(exp.id)}
+                      title="Удалить"
               >✕</button>
             {/if}
           </div>
-          
+
           <div class="form-grid">
             <div class="form-group full-width">
               <label class="form-label">Компания</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                bind:value={exp.company}
-                placeholder="Название компании"
+              <input
+                      type="text"
+                      class="form-input"
+                      bind:value={exp.company}
+                      on:input={validateStep3}
+                      placeholder="Название компании"
               >
             </div>
-            
+
             <div class="form-group full-width">
               <label class="form-label">Должность</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                bind:value={exp.position}
-                placeholder="Ваша должность"
+              <input
+                      type="text"
+                      class="form-input"
+                      bind:value={exp.position}
+                      on:input={validateStep3}
+                      placeholder="Ваша должность"
               >
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Начало работы</label>
               <div class="date-selects">
-                <select class="form-select" bind:value={exp.startMonth}>
+                <select class="form-select" bind:value={exp.startMonth} on:change={validateStep3}>
                   <option value="">Месяц</option>
                   {#each months as month, idx}
                     <option value={idx + 1}>{month}</option>
                   {/each}
                 </select>
-                <select class="form-select" bind:value={exp.startYear}>
+                <select class="form-select" bind:value={exp.startYear} on:change={validateStep3}>
                   <option value="">Год</option>
                   {#each years as year}
                     <option value={year}>{year}</option>
@@ -514,18 +769,18 @@
                 </select>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Окончание работы</label>
               <div class="date-selects">
                 {#if !exp.current}
-                  <select class="form-select" bind:value={exp.endMonth}>
+                  <select class="form-select" bind:value={exp.endMonth} on:change={validateStep3}>
                     <option value="">Месяц</option>
                     {#each months as month, idx}
                       <option value={idx + 1}>{month}</option>
                     {/each}
                   </select>
-                  <select class="form-select" bind:value={exp.endYear}>
+                  <select class="form-select" bind:value={exp.endYear} on:change={validateStep3}>
                     <option value="">Год</option>
                     {#each years as year}
                       <option value={year}>{year}</option>
@@ -534,30 +789,33 @@
                 {/if}
               </div>
               <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  bind:checked={exp.current}
-                  on:change={() => toggleCurrentJob(exp)}
+                <input
+                        type="checkbox"
+                        bind:checked={exp.current}
+                        on:change={() => toggleCurrentJob(exp)}
                 > По настоящее время
               </label>
             </div>
-            
+
             <div class="form-group full-width">
               <label class="form-label">Описание обязанностей и достижений</label>
-              <textarea 
-                class="form-textarea" 
-                bind:value={exp.description}
-                placeholder="Опишите ваши задачи, достижения, проекты..."
-                rows="3"
+              <textarea
+                      class="form-textarea"
+                      bind:value={exp.description}
+                      rows="3"
               ></textarea>
             </div>
           </div>
         </div>
       {/each}
-      
+
       <button class="add-block-btn" on:click={addWorkExperience}>
         + Добавить еще место работы
       </button>
+
+      {#if stepErrors.step3}
+        <div class="error-message step-error">{stepErrors.step3}</div>
+      {/if}
     </div>
   {/if}
 
@@ -566,61 +824,63 @@
     <div class="step-content">
       <h2 class="content-title">Образование</h2>
       <p class="content-subtitle">Добавьте учебные заведения</p>
-      
+
       {#each education as edu, index}
         <div class="education-block">
           <div class="block-header">
             <h3 class="block-title">Образование {index + 1}</h3>
             {#if education.length > 1}
-              <button 
-                class="remove-block" 
-                on:click={() => removeEducation(edu.id)}
-                title="Удалить"
+              <button
+                      class="remove-block"
+                      on:click={() => removeEducation(edu.id)}
+                      title="Удалить"
               >✕</button>
             {/if}
           </div>
-          
+
           <div class="form-grid">
             <div class="form-group full-width">
               <label class="form-label">Учебное заведение</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                bind:value={edu.institution}
-                placeholder="Название университета, колледжа, школы"
+              <input
+                      type="text"
+                      class="form-input"
+                      bind:value={edu.institution}
+                      on:input={validateStep4}
+                      placeholder="Название университета, колледжа, школы"
               >
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Степень</label>
-              <select class="form-select" bind:value={edu.degree}>
+              <select class="form-select" bind:value={edu.degree} on:change={validateStep4}>
                 <option value="">Выберите степень</option>
                 {#each degreeOptions as degree}
                   <option value={degree}>{degree}</option>
                 {/each}
               </select>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Специальность</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                bind:value={edu.field}
-                placeholder="Например: Программная инженерия"
+              <input
+                      type="text"
+                      class="form-input"
+                      bind:value={edu.field}
+                      on:input={validateStep4}
+                      placeholder="Например: Программная инженерия"
               >
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Начало обучения</label>
               <div class="date-selects">
-                <select class="form-select" bind:value={edu.startMonth}>
+                <select class="form-select" bind:value={edu.startMonth} on:change={validateStep4}>
                   <option value="">Месяц</option>
                   {#each months as month, idx}
                     <option value={idx + 1}>{month}</option>
                   {/each}
                 </select>
-                <select class="form-select" bind:value={edu.startYear}>
+                <select class="form-select" bind:value={edu.startYear} on:change={validateStep4}>
                   <option value="">Год</option>
                   {#each years as year}
                     <option value={year}>{year}</option>
@@ -628,18 +888,18 @@
                 </select>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Окончание обучения</label>
               <div class="date-selects">
                 {#if !edu.current}
-                  <select class="form-select" bind:value={edu.endMonth}>
+                  <select class="form-select" bind:value={edu.endMonth} on:change={validateStep4}>
                     <option value="">Месяц</option>
                     {#each months as month, idx}
                       <option value={idx + 1}>{month}</option>
                     {/each}
                   </select>
-                  <select class="form-select" bind:value={edu.endYear}>
+                  <select class="form-select" bind:value={edu.endYear} on:change={validateStep4}>
                     <option value="">Год</option>
                     {#each years as year}
                       <option value={year}>{year}</option>
@@ -648,20 +908,24 @@
                 {/if}
               </div>
               <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  bind:checked={edu.current}
-                  on:change={() => toggleCurrentEducation(edu)}
+                <input
+                        type="checkbox"
+                        bind:checked={edu.current}
+                        on:change={() => toggleCurrentEducation(edu)}
                 > Обучаюсь до сих пор
               </label>
             </div>
           </div>
         </div>
       {/each}
-      
+
       <button class="add-block-btn" on:click={addEducation}>
         + Добавить еще образование
       </button>
+
+      {#if stepErrors.step4}
+        <div class="error-message step-error">{stepErrors.step4}</div>
+      {/if}
     </div>
   {/if}
 
@@ -669,73 +933,44 @@
   {#if currentStep === 5}
     <div class="step-content">
       <h2 class="content-title">Ваши суперсилы</h2>
-      <p class="content-subtitle">Выберите навыки из списка или добавьте свои</p>
-      
+      <p class="content-subtitle">Выберите навыки из списка</p>
+
       <!-- Выбранные навыки -->
       {#if selectedSkills.length > 0}
         <div class="selected-skills">
           <h3 class="section-subtitle">Выбранные навыки:</h3>
           <div class="skills-cloud">
             {#each selectedSkills as skill}
-              <span class="skill-tag selected" on:click={() => removeSkill(skill)}>
+              <span class="skill-tag selected" on:click={() => toggleSkill(skill)}>
                 {skill} ✕
               </span>
             {/each}
           </div>
         </div>
       {/if}
-      
-      <!-- Популярные навыки (прямоугольнички) -->
-      <div class="skills-section">
-        <h3 class="section-subtitle">Популярные навыки</h3>
-        <div class="skills-grid">
-          {#each popularSkills as skill}
-            <button 
-              class="skill-rect {selectedSkills.includes(skill) ? 'selected' : ''}"
-              on:click={() => toggleSkill(skill)}
-            >
-              {skill}
-            </button>
-          {/each}
-        </div>
-      </div>
-      
-      <!-- Категории навыков -->
-      <div class="skills-section">
-        <h3 class="section-subtitle">По категориям</h3>
-        {#each skillCategories as category}
-          <div class="skill-category">
-            <h4 class="category-name">{category.name}</h4>
+
+      <!-- Динамические теги по категориям из БД -->
+      {#each categoryOrder as category}
+        {#if tagsByCategory[category] && tagsByCategory[category].length > 0}
+          <div class="skills-section">
+            <h3 class="section-subtitle">{categoryDisplayNames[category] || category}</h3>
             <div class="skills-cloud">
-              {#each category.skills as skill}
-                <span 
-                  class="skill-tag {selectedSkills.includes(skill) ? 'selected' : ''}"
-                  on:click={() => toggleSkill(skill)}
+              {#each tagsByCategory[category] as tag}
+                <span
+                        class="skill-tag {selectedSkills.includes(tag.name) ? 'selected' : ''}"
+                        on:click={() => toggleSkill(tag.name)}
                 >
-                  {skill}
+                  {tag.name}
                 </span>
               {/each}
             </div>
           </div>
-        {/each}
-      </div>
-      
-      <!-- Добавление своего навыка -->
-      <div class="custom-skill-section">
-        <h3 class="section-subtitle">Добавить свой навык</h3>
-        <div class="custom-skill-input">
-          <input 
-            type="text" 
-            class="form-input" 
-            bind:value={customSkill}
-            placeholder="Введите название навыка..."
-            on:keydown={(e) => e.key === 'Enter' && addCustomSkill()}
-          >
-          <button class="add-skill-btn" on:click={addCustomSkill}>
-            Добавить
-          </button>
-        </div>
-      </div>
+        {/if}
+      {/each}
+
+      {#if stepErrors.step5}
+        <div class="error-message step-error">{stepErrors.step5}</div>
+      {/if}
     </div>
   {/if}
 
@@ -753,16 +988,16 @@
         ← НАЗАД
       </button>
     {/if}
-    
+
     {#if currentStep < totalSteps}
       <button class="nav-button next" on:click={nextStep}>
         ДАЛЕЕ →
       </button>
     {:else}
-      <button 
-        class="nav-button submit" 
-        on:click={submitResume}
-        disabled={isSubmitting}
+      <button
+              class="nav-button submit"
+              on:click={submitResume}
+              disabled={isSubmitting}
       >
         {#if isSubmitting}
           СОЗДАНИЕ...
@@ -782,7 +1017,6 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Шаги */
   .steps-container {
     display: flex;
     justify-content: space-between;
@@ -837,7 +1071,6 @@
     color: #64748b;
   }
 
-  /* Контент шага */
   .step-content {
     margin-bottom: 2rem;
   }
@@ -862,7 +1095,6 @@
     margin: 1.5rem 0 1rem 0;
   }
 
-  /* Форма */
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -921,7 +1153,6 @@
     font-family: inherit;
   }
 
-  /* Блоки опыта и образования */
   .experience-block,
   .education-block {
     background: #f8fafc;
@@ -965,7 +1196,6 @@
     transform: scale(1.1);
   }
 
-  /* Дата пикеры */
   .date-selects {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -982,7 +1212,6 @@
     margin-top: 0.5rem;
   }
 
-  /* Кнопки добавления */
   .add-block-btn {
     background: none;
     border: 2px dashed #94a3b8;
@@ -1002,7 +1231,6 @@
     background: #f0f9ff;
   }
 
-  /* Стили для навыков */
   .selected-skills {
     background: #f0f9ff;
     padding: 1rem;
@@ -1012,37 +1240,6 @@
 
   .skills-section {
     margin-bottom: 2rem;
-  }
-
-  .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  .skill-rect {
-    padding: 0.75rem 1rem;
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #475569;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-
-  .skill-rect:hover {
-    border-color: #2563eb;
-    transform: translateY(-1px);
-  }
-
-  .skill-rect.selected {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: white;
   }
 
   .skills-cloud {
@@ -1072,45 +1269,6 @@
     color: white;
   }
 
-  .skill-category {
-    margin-bottom: 1.5rem;
-  }
-
-  .category-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .custom-skill-section {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: #f8fafc;
-    border-radius: 12px;
-  }
-
-  .custom-skill-input {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .add-skill-btn {
-    padding: 0 1.5rem;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .add-skill-btn:hover {
-    background: #1d4ed8;
-  }
-
-  /* Эксперты */
   .experts-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1160,7 +1318,6 @@
     line-height: 1.5;
   }
 
-  /* Ошибка */
   .error-message {
     background: #fee2e2;
     border-left: 4px solid #ef4444;
@@ -1170,7 +1327,10 @@
     border-radius: 8px;
   }
 
-  /* Кнопки навигации */
+  .step-error {
+    margin-top: 1rem;
+  }
+
   .navigation-buttons {
     display: flex;
     justify-content: flex-end;
@@ -1223,154 +1383,46 @@
     background: rgba(255, 0, 17, 0.63);
   }
 
-  /* ===== АДАПТИВНОСТЬ ===== */
-
   @media (max-width: 1300px) {
-    .resume-creator {
-      max-width: 800px;
-    }
+    .resume-creator { max-width: 800px; }
   }
 
   @media (max-width: 1080px) {
-    .content-title {
-      font-size: 1.8rem;
-    }
-    
-    .steps-container {
-      gap: 0.5rem;
-    }
-    
-    .step-title {
-      font-size: 1rem;
-    }
-    
-    .step-subtitle {
-      font-size: 0.8rem;
-    }
-    
-    .experts-grid {
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
+    .content-title { font-size: 1.8rem; }
+    .steps-container { gap: 0.5rem; }
+    .step-title { font-size: 1rem; }
+    .step-subtitle { font-size: 0.8rem; }
+    .experts-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
   }
 
   @media (max-width: 900px) {
-    .steps-container {
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    
-    .step-item {
-      width: calc(50% - 0.5rem);
-    }
-    
-    .form-grid {
-      gap: 1rem;
-    }
+    .steps-container { flex-wrap: wrap; gap: 1rem; }
+    .step-item { width: calc(50% - 0.5rem); }
+    .form-grid { gap: 1rem; }
   }
 
   @media (max-width: 650px) {
-    .resume-creator {
-      padding: 1rem;
-    }
-    
-    .steps-container {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .step-item {
-      width: 100%;
-    }
-    
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-group.full-width {
-      grid-column: span 1;
-    }
-    
-    .content-title {
-      font-size: 1.5rem;
-    }
-    
-    .content-subtitle {
-      font-size: 1rem;
-    }
-    
-    .date-selects {
-      grid-template-columns: 1fr;
-    }
-    
-    .skills-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    }
-    
-    .custom-skill-input {
-      flex-direction: column;
-    }
-    
-    .add-skill-btn {
-      padding: 0.75rem;
-    }
-    
-    .navigation-buttons {
-      flex-direction: column;
-    }
-    
-    .nav-button {
-      width: 100%;
-    }
+    .resume-creator { padding: 1rem; }
+    .steps-container { flex-direction: column; gap: 1rem; }
+    .step-item { width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full-width { grid-column: span 1; }
+    .content-title { font-size: 1.5rem; }
+    .content-subtitle { font-size: 1rem; }
+    .date-selects { grid-template-columns: 1fr; }
+    .navigation-buttons { flex-direction: column; }
+    .nav-button { width: 100%; }
   }
 
   @media (max-width: 475px) {
-    .content-title {
-      font-size: 1.25rem;
-    }
-    
-    .content-subtitle {
-      font-size: 0.9rem;
-    }
-    
-    .step-number {
-      width: 32px;
-      height: 32px;
-      font-size: 1rem;
-    }
-    
-    .step-title {
-      font-size: 0.9rem;
-    }
-    
-    .step-subtitle {
-      font-size: 0.7rem;
-    }
-    
-    .form-input,
-    .form-textarea,
-    .form-select {
-      padding: 0.6rem 0.8rem;
-      font-size: 0.9rem;
-    }
-    
-    .skill-rect {
-      padding: 0.6rem;
-      font-size: 0.85rem;
-    }
-    
-    .skill-tag {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.85rem;
-    }
-    
-    .nav-button {
-      font-size: 1rem;
-      padding: 0.6rem 1.5rem;
-    }
-    
-    .experience-block,
-    .education-block {
-      padding: 1rem;
-    }
+    .content-title { font-size: 1.25rem; }
+    .content-subtitle { font-size: 0.9rem; }
+    .step-number { width: 32px; height: 32px; font-size: 1rem; }
+    .step-title { font-size: 0.9rem; }
+    .step-subtitle { font-size: 0.7rem; }
+    .form-input, .form-textarea, .form-select { padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+    .skill-tag { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    .nav-button { font-size: 1rem; padding: 0.6rem 1.5rem; }
+    .experience-block, .education-block { padding: 1rem; }
   }
 </style>
