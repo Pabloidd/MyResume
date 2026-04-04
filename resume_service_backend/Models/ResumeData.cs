@@ -27,7 +27,10 @@ namespace resume_service_backend.Models
         
         // Навыки
         public List<string> Skills { get; set; } = new();
-        
+
+        /// Строка с ID тегов через запятую (для хранимой процедуры)
+        public string? TagIds { get; set; }
+
         // Метаданные
         public DateTime CreatedAt { get; set; }
         public string Template { get; set; } = "modern";

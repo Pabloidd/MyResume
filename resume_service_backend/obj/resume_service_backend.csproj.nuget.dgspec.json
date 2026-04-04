@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj": {}
+    "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\resume_service_backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj": {
+    "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\resume_service_backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj",
+        "projectUniqueName": "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\resume_service_backend.csproj",
         "projectName": "resume_service_backend",
-        "projectPath": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj",
+        "projectPath": "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\resume_service_backend.csproj",
         "packagesPath": "C:\\Users\\Pabloid\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\obj\\",
+        "outputPath": "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Pabloid\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -96,7 +96,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

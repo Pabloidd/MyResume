@@ -5,6 +5,7 @@ using resume_service_backend.Controllers;
 using resume_service_backend.Models;
 using resume_service_backend.Repositories;
 using resume_service_backend.Services;
+using System.IO;
 
 namespace resume_service_backend.Controllers
 {
@@ -115,10 +116,10 @@ namespace resume_service_backend.Controllers
             // Валидация
             var error = RequireString(data.Email, "Email");
             if (error != null) return error;
-            
+
             error = RequireString(data.FirstName, "Имя");
             if (error != null) return error;
-            
+
             error = RequireString(data.LastName, "Фамилия");
             if (error != null) return error;
 
@@ -131,19 +132,27 @@ namespace resume_service_backend.Controllers
             var resumeCount = await _resumeRepository.GetCountByEmailAsync(data.Email);
             if (resumeCount >= MAX_RESUMES_PER_USER)
                 return BadRequest($"Достигнут лимит резюме (максимум {MAX_RESUMES_PER_USER})");
-            
+
             try
             {
                 // Генерируем PDF
                 var pdfBytes = await _pdfService.GenerateResumePdfAsync(data);
-                
+
                 // Формируем имя файла
-                var filename = $"resume_{data.FirstName}_{data.LastName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
-                
-                // TODO: конвертировать навыки в ID тегов
-                // Это нужно будет реализовать через отдельный сервис
-                var tagIds = "";
-                
+                var desiredPosition = string.IsNullOrEmpty(data.DesiredPosition)
+                    ? "resume"
+                    : string.Join("_", data.DesiredPosition.Split(Path.GetInvalidFileNameChars()));
+
+                var filename = $"{desiredPosition}_{DateTime.Now:yyyyMMdd}.pdf";
+
+                // Получаем строку с ID тегов из запроса (если есть)
+                var tagIds = data.TagIds ?? "";
+
+                // Логируем для отладки
+                Console.WriteLine($"📝 Создание резюме для {data.Email}");
+                Console.WriteLine($"🏷️ Полученные TagIds: '{tagIds}'");
+                Console.WriteLine($"🎨 Стиль эксперта: {data.ExpertStyle ?? "не выбран"}");
+
                 // Создаём запрос для репозитория
                 var request = new CreateResumeRequest
                 {
@@ -153,10 +162,10 @@ namespace resume_service_backend.Controllers
                     Status = "private",
                     TagIds = tagIds
                 };
-                
+
                 // Сохраняем в БД
                 var resumeId = await _resumeRepository.CreateWithTagsAsync(request);
-                
+
                 var response = new CreateResumeResponse
                 {
                     ResumeId = resumeId,
@@ -165,11 +174,14 @@ namespace resume_service_backend.Controllers
                     Size = pdfBytes.Length,
                     PdfBase64 = Convert.ToBase64String(pdfBytes)
                 };
-                
+
+                Console.WriteLine($"✅ Резюме создано с ID: {resumeId}");
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Ошибка: {ex.Message}");
                 return StatusCode(500, new { error = $"Ошибка при генерации PDF: {ex.Message}" });
             }
         }

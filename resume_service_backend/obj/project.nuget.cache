@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "dm+Ffe/rLxE=",
+  "dgSpecHash": "nh6umwbQKc4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Pabloid\\Desktop\\workspace\\projects\\resume\\resume_service_backend\\resume_service_backend.csproj",
+  "projectFilePath": "C:\\Users\\Pabloid\\workspace\\вузовское\\бэкенд\\MyResume\\resume_service_backend\\resume_service_backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Pabloid\\.nuget\\packages\\dapper\\2.1.72\\dapper.2.1.72.nupkg.sha512",
     "C:\\Users\\Pabloid\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.3\\microsoft.aspnetcore.openapi.9.0.3.nupkg.sha512",

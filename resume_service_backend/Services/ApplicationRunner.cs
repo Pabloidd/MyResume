@@ -16,10 +16,25 @@ namespace resume_service_backend.Services
             // Иначе запускаем обычное приложение
             var builder = WebApplication.CreateBuilder(args);
 
+            // ===== ДОБАВЛЯЕМ CORS =====
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")  // адрес твоего фронта
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                });
+            });
+
             builder.Services.AddControllers();
             builder.Services.AddApplicationServices(builder.Configuration);
 
             var app = builder.Build();
+
+            // ===== ИСПОЛЬЗУЕМ CORS ПЕРЕД МАРШРУТИЗАЦИЕЙ =====
+            app.UseCors("AllowFrontend");
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
