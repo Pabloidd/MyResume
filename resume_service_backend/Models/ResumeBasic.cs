@@ -12,6 +12,7 @@ namespace resume_service_backend.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty; // pdf_filename
+        public string Status { get; set; } = "private";
         public string? Email { get; set; }
         public string? Tags { get; set; } // строка с тегами через запятую
     }

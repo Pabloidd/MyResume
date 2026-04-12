@@ -1,9 +1,14 @@
 <script>
     import { goto } from "$app/navigation";
     import { base } from '$app/paths';
+    import { auth } from "$lib/authStore";
 
   function goToSignIn(){
-    goto(`${base}/SignIn`)
+    if ($auth.isAuthenticated) {
+        goto(`${base}/profile`);
+    } else {
+        goto(`${base}/SignIn`);
+    }
   }
 </script>
 

@@ -1,0 +1,720 @@
+{
+  "info": {
+    "name": "Auth Service API",
+    "description": "Полная коллекция тестов для микросервиса аутентификации",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "test@example.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "verificationCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resetCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Проверка работоспособности сервера"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Регистрация",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has success field', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});",
+              "",
+              "console.log('⚠️ Проверьте email для получения кода подтверждения!');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "register"]
+        },
+        "description": "Регистрация нового пользователя. Код отправляется на email."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Подтверждение email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('User is verified', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user.status).to.eql('active');",
+              "});",
+              "",
+              "// Сохраняем токен из cookie",
+              "var cookies = pm.cookies.all();",
+              "var authCookie = cookies.find(c => c.name === 'authToken');",
+              "if (authCookie) {",
+              "    pm.collectionVariables.set('authToken', authCookie.value);",
+              "    console.log('✅ Token saved:', authCookie.value);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// ВАЖНО: Вставьте код из email в переменную verificationCode",
+              "console.log('⚠️ Не забудьте вставить код из email в переменную verificationCode!');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"{{verificationCode}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/verify",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "verify"]
+        },
+        "description": "Подтверждение email с кодом из письма"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Логин",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Login successful', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});",
+              "",
+              "// Сохраняем токен",
+              "var cookies = pm.cookies.all();",
+              "var authCookie = cookies.find(c => c.name === 'authToken');",
+              "if (authCookie) {",
+              "    pm.collectionVariables.set('authToken', authCookie.value);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "Вход в систему"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Проверка авторизации",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('User data returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user).to.have.property('email');",
+              "    pm.expect(jsonData.user).to.have.property('role');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/check",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "check"]
+        },
+        "description": "Проверка текущей авторизации (требует cookie)"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Получить профиль",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Profile data returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user.email).to.eql(pm.collectionVariables.get('email'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "profile"]
+        },
+        "description": "Получение данных профиля (требует авторизации)"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Забыли пароль",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "console.log('⚠️ Проверьте email для получения кода сброса пароля!');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/forgot-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "forgot-password"]
+        },
+        "description": "Запрос на сброс пароля. Код отправляется на email."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Сброс пароля",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "console.log('⚠️ Не забудьте вставить код из email в переменную resetCode!');"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Password reset successful', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"{{resetCode}}\",\n  \"newPassword\": \"newpassword123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "reset-password"]
+        },
+        "description": "Сброс пароля с кодом из email"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Повторная отправка кода",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "console.log('⚠️ Новый код отправлен на email!');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/resend-code",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "resend-code"]
+        },
+        "description": "Повторная отправка кода подтверждения (макс 3 попытки)"
+      },
+      "response": []
+    },
+    {
+      "name": "10. Выход",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Logout successful', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});",
+              "",
+              "pm.collectionVariables.set('authToken', '');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "logout"]
+        },
+        "description": "Выход из системы (удаляет токен)"
+      },
+      "response": []
+    },
+    {
+      "name": "11. [ADMIN] Логин админа",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Admin login successful', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user.status).to.eql('active');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"superadmin@example.com\",\n  \"password\": \"superSecurePassword123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "Вход под админом (из .env)"
+      },
+      "response": []
+    },
+    {
+      "name": "12. [ADMIN] Получить всех пользователей",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Users list returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.users).to.be.an('array');",
+              "});",
+              "",
+              "// Сохраняем ID первого пользователя для теста повышения",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.users && jsonData.users.length > 0) {",
+              "    var regularUser = jsonData.users.find(u => u.role === 'user');",
+              "    if (regularUser) {",
+              "        pm.collectionVariables.set('userId', regularUser._id);",
+              "        console.log('✅ User ID saved:', regularUser._id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/admin/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "admin", "users"]
+        },
+        "description": "Получение списка всех пользователей (только для админа)"
+      },
+      "response": []
+    },
+    {
+      "name": "13. [ADMIN] Повысить до premium",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('User upgraded to premium', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user.role).to.eql('premium');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Проверяем, что userId установлен",
+              "var userId = pm.collectionVariables.get('userId');",
+              "if (!userId) {",
+              "    console.log('⚠️ Сначала выполните запрос \"Получить всех пользователей\"');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/admin/upgrade-premium",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "admin", "upgrade-premium"]
+        },
+        "description": "Повышение пользователя до premium (только для админа)"
+      },
+      "response": []
+    },
+    {
+      "name": "14. [PREMIUM] Получить премиум контент",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Premium content returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.content).to.have.property('title');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/premium/content",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "premium", "content"]
+        },
+        "description": "Получение премиум контента (только для premium и admin)"
+      },
+      "response": []
+    },
+    {
+      "name": "15. [INTERNAL] Валидация токена",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Token is valid', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.valid).to.eql(true);",
+              "    pm.expect(jsonData).to.have.property('userId');",
+              "    pm.expect(jsonData).to.have.property('role');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Получаем токен из cookie",
+              "var cookies = pm.cookies.all();",
+              "var authCookie = cookies.find(c => c.name === 'authToken');",
+              "if (authCookie) {",
+              "    pm.collectionVariables.set('authToken', authCookie.value);",
+              "} else {",
+              "    console.log('⚠️ Токен не найден. Сначала выполните логин.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Secret",
+            "value": "secret-for-microservices"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{authToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/internal/validate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "internal", "validate"]
+        },
+        "description": "Внутренний API для валидации токена другими микросервисами"
+      },
+      "response": []
+    },
+    {
+      "name": "16. [INTERNAL] Проверка пользователя",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('User exists', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.exists).to.eql(true);",
+              "    pm.expect(jsonData.user).to.have.property('email');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Secret",
+            "value": "secret-for-microservices"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/internal/check-user",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "internal", "check-user"]
+        },
+        "description": "Внутренний API для проверки существования пользователя"
+      },
+      "response": []
+    }
+  ]
+}

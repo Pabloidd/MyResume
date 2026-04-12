@@ -2,9 +2,14 @@
     import arrow from "$lib/images/arrow.svg";
     import { goto } from "$app/navigation";
     import { base } from '$app/paths';
+    import { auth } from "$lib/authStore";
 
-      function goToSignIn(){
-        goto(`${base}/SignIn`);
+    function goToSignIn() {
+        if ($auth.isAuthenticated) {
+            goto(`${base}/profile`);
+        } else {
+            goto(`${base}/SignIn`);
+        }
     }
 </script>
 

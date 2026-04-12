@@ -1,5 +1,7 @@
 <script>
   import { onMount } from 'svelte';
+  import { auth } from '$lib/authStore';
+  import toast from 'svelte-french-toast';
 
   let loading = false;
   let searchResults = [];
@@ -132,7 +134,39 @@
     }
   }
 
+  // Удаление резюме (только для Админов)
+  async function deleteResume(id) {
+    if (!confirm('Вы уверены, что хотите удалить это резюме? Оно будет навсегда удалено из базы данных.')) {
+      return;
+    }
+
+    try {
+      const userEmail = $auth.user?.email || '';
+      const userRole = $auth.user?.role || 'user';
+      
+      const response = await fetch(`${API_BASE_URL}/api/resumes/${id}?email=${encodeURIComponent(userEmail)}&role=${userRole}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Резюме успешно удалено');
+        searchResults = searchResults.filter(r => r.id !== id);
+      } else {
+        const data = await response.json();
+        throw new Error(data.message || 'Ошибка при удалении');
+      }
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   onMount(async () => {
+    // Редирект для обычных пользователей, которым запрещен поиск по Use-Case
+    if ($auth.user?.role === 'user') {
+      toast.error('Доступ к поиску резюме ограничен. Повысьте статус до Премиум.');
+      goto(`${base}/profile`);
+      return;
+    }
     await loadTags();
     await loadAllPublicResumes();
   });
@@ -208,13 +242,24 @@
                 </div>
               {/if}
             </div>
-            <button
-                    class="download-btn"
-                    on:click={() => downloadResume(resume.id, resume.name)}
-            >
-              <span class="download-icon">⬇️</span>
-              <span class="download-text">Скачать PDF</span>
-            </button>
+            <div class="actions-group">
+              <button
+                      class="download-btn"
+                      on:click={() => downloadResume(resume.id, resume.name)}
+              >
+                <span class="download-icon">⬇️</span>
+                <span class="download-text">Скачать PDF</span>
+              </button>
+
+              {#if $auth.user && $auth.user.role === 'admin'}
+                <button
+                        class="delete-btn"
+                        on:click={() => deleteResume(resume.id)}
+                >
+                  Удалить
+                </button>
+              {/if}
+            </div>
           </div>
         {/each}
       </div>
@@ -227,7 +272,6 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #333;
   }
 
@@ -237,11 +281,12 @@
   }
 
   .search-title {
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-family: var(--font-heading);
+    font-size: 2.85rem;
+    font-weight: 800;
     margin: 0 0 0.5rem 0;
     color: #000;
-    letter-spacing: 1px;
+    letter-spacing: -0.03em;
   }
 
   .search-subtitle {
@@ -424,6 +469,31 @@
     background-color: #1d4ed8;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  }
+
+  .actions-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .delete-btn {
+    background-color: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .delete-btn:hover {
+    background-color: #fef2f2;
+    transform: translateY(-1px);
   }
 
   /* Состояния */

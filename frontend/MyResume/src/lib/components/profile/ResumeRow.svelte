@@ -1,7 +1,11 @@
 <script>
-  export let _title;
+  import toast from 'svelte-french-toast';
+  
+  export let id;
+  export let title;
   export let initialStatus = 'public'; // 'public' или 'private'
   
+  const RESUME_API_BASE = 'http://localhost:5052';
   let status = initialStatus;
   let isUpdating = false;
   
@@ -13,23 +17,46 @@
     if (isUpdating) return;
     
     isUpdating = true;
-    const newStatus = status === 'public' ? 'private' : 'public';
-    
-    // Имитация запроса к серверу
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Меняем статус
-    status = newStatus;
-    isUpdating = false;
+    try {
+      const response = await fetch(`${RESUME_API_BASE}/api/resumes/${id}/toggle-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Ошибка при смене статуса');
+      
+      const data = await response.json();
+      status = data.status; // Предполагаем, что бэкенд возвращает новый статус
+      toast.success(`Статус изменен на ${getStatusText()}`);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      isUpdating = false;
+    }
   }
   
-  function handleDownload() {
-    alert(`Скачивание "${_title}" начато...`);
+  async function handleDownload() {
+    try {
+      const response = await fetch(`${RESUME_API_BASE}/api/resumes/${id}/download`);
+      if (!response.ok) throw new Error('Ошибка при скачивании');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast.error(error.message);
+    }
   }
 </script>
 
 <div class="resume-row">
-  <span class="resume-title">{_title}</span>
+  <span class="resume-title">{title}</span>
   
   <button 
     class="resume-status {status === 'public' ? 'status-public' : 'status-private'}" 

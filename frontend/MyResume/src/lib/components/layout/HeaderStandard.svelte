@@ -6,28 +6,47 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
 
+  import { authApi } from '$lib/authApi';
+  import { auth } from '$lib/authStore';
+  import toast from 'svelte-french-toast';
+
+  async function handleLogout() {
+    try {
+      await authApi.logout();
+      auth.logout();
+      toast.success('Вы вышли из системы');
+      goto(`${base}/`);
+    } catch (error) {
+      toast.error('Ошибка при выходе');
+    }
+  }
+
   function goToMain(){
     goto(`${base}/`)
-}
+  }
 </script>
 
 <header class="dashboard-header">
 
-      <img src="{logo}" class="logo" alt="MyResume">
+      <a href="{base}/" class="logo-link">
+        <img src="{logo}" class="logo" alt="MyResume">
+      </a>
         
       <div class="nav-container">
         <nav class="main-nav">
-          <a href="{base}/search" class="nav-link" 
-             class:isActive={$page.url.pathname === `${base}/search` || $page.url.pathname === `${base}/search/`}>
-             Поиск Резюме
-          </a>
+          {#if $auth.user && $auth.user.role !== 'user'}
+            <a href="{base}/search" class="nav-link" 
+               class:isActive={$page.url.pathname === `${base}/search` || $page.url.pathname === `${base}/search/`}>
+               Поиск Резюме
+            </a>
+          {/if}
           <a href="{base}/profile" class="nav-link" 
              class:isActive={$page.url.pathname === `${base}/profile` || $page.url.pathname === `${base}/profile/`}>
              Личный кабинет
           </a>
-      </nav>
+        </nav>
 
-        <button type="button" on:click={goToMain} class="logout-btn">
+        <button type="button" on:click={() => { if(confirm('Вы уверены, что хотите выйти?')) handleLogout(); }} class="logout-btn">
             <img src="{exit}" class="logout-icon" alt="exit"/>
             Выйти
         </button>

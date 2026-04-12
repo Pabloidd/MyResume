@@ -38,6 +38,44 @@ namespace resume_service_backend.Repositories
         }
 
         /// <summary>
+        /// Получить ВСЕ резюме (включая приватные) по тегам для АДМИНИСТРАТОРА
+        /// </summary>
+        public async Task<List<PublicResume>> GetAllByTagsForAdminAsync(string? tagIds = null)
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            
+            // Если теги не переданы, получаем всё
+            if (string.IsNullOrWhiteSpace(tagIds))
+            {
+                var query = @"
+                    SELECT r.id as Id, r.pdf_filename as Name, r.email as Email,
+                           COALESCE(GROUP_CONCAT(t.name SEPARATOR ', '), '') as Tags
+                    FROM resumes r
+                    LEFT JOIN resume_tags rt ON r.id = rt.resume_id
+                    LEFT JOIN tags t ON rt.tag_id = t.id
+                    GROUP BY r.id
+                    ORDER BY r.id DESC";
+                return (await connection.QueryAsync<PublicResume>(query)).ToList();
+            }
+            
+            // Если переданы теги - фильтруем по ним
+            var tagArray = tagIds.Split(',').Select(t => int.Parse(t.Trim())).ToList();
+            var tagsQuery = @"
+                SELECT r.id as Id, r.pdf_filename as Name, r.email as Email,
+                       COALESCE(GROUP_CONCAT(t.name SEPARATOR ', '), '') as Tags
+                FROM resumes r
+                LEFT JOIN resume_tags rt ON r.id = rt.resume_id
+                LEFT JOIN tags t ON rt.tag_id = t.id
+                WHERE r.id IN (
+                    SELECT resume_id FROM resume_tags WHERE tag_id IN @TagIds
+                )
+                GROUP BY r.id
+                ORDER BY r.id DESC";
+                
+            return (await connection.QueryAsync<PublicResume>(tagsQuery, new { TagIds = tagArray })).ToList();
+        }
+
+        /// <summary>
         /// Получить ID и названия всех резюме (sp_get_all_resumes_basic)
         /// </summary>
         public async Task<List<ResumeBasic>> GetAllBasicAsync()

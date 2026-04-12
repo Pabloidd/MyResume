@@ -9,6 +9,7 @@ namespace resume_service_backend.Repositories
         // Существующие методы
         Task<List<ResumeBasic>> GetByEmailAsync(string email);
         Task<List<PublicResume>> GetPublicByTagsAsync(string? tagIds = null);
+        Task<List<PublicResume>> GetAllByTagsForAdminAsync(string? tagIds = null);
         Task<List<ResumeBasic>> GetAllBasicAsync();
         Task<string> ToggleStatusAsync(int resumeId);
         Task<int> CreateWithTagsAsync(CreateResumeRequest request);

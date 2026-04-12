@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import { base } from '$app/paths';
   import { onMount } from 'svelte';
+  import { auth } from '$lib/authStore';
+  import { get } from 'svelte/store';
 
   let currentStep = 1;
   let totalSteps = 5;
@@ -503,6 +505,8 @@
     const tagIds = getTagIdsFromSkills(selectedSkills);
 
     return {
+      ownerEmail: get(auth).user?.email || formData.email.trim(),
+      ownerRole: get(auth).user?.role || 'user',
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       desiredPosition: formData.desiredPosition.trim(),
@@ -541,8 +545,15 @@
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Ошибка при создании резюме');
+        let errorMessage = 'Ошибка при создании резюме';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.title || errorMessage;
+        } catch(e) {
+          const text = await response.text();
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -1014,7 +1025,6 @@
     max-width: 900px;
     margin: 0 auto;
     padding: 2rem;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   .steps-container {
@@ -1089,10 +1099,12 @@
   }
 
   .section-subtitle {
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
     color: #1e293b;
-    margin: 1.5rem 0 1rem 0;
+    margin: 2rem 0 1.25rem 0;
+    letter-spacing: -0.01em;
   }
 
   .form-grid {
@@ -1170,8 +1182,9 @@
   }
 
   .block-title {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
     color: #1e293b;
     margin: 0;
   }
@@ -1305,10 +1318,12 @@
   }
 
   .expert-name {
-    font-size: 1.25rem;
-    font-weight: bold;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
     color: #1e293b;
     margin: 0;
+    letter-spacing: -0.02em;
   }
 
   .expert-desc {
@@ -1343,7 +1358,9 @@
   .nav-button {
     padding: 0.75rem 2rem;
     font-size: 1.1rem;
+    font-family: var(--font-heading);
     font-weight: 600;
+    white-space: nowrap;
     border: none;
     border-radius: 8px;
     cursor: pointer;

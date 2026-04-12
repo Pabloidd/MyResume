@@ -8,6 +8,12 @@ namespace resume_service_backend.Models
     /// </summary>
     public class ResumeData
     {
+        // Email владельца аккаунта
+        public string? OwnerEmail { get; set; }
+
+        // Роль владельца (выступает основой для лимитов)
+        public string OwnerRole { get; set; } = "user";
+
         // Основная информация
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;

@@ -113,8 +113,10 @@ namespace resume_service_backend.Controllers
         [HttpPost("generate")]
         public async Task<ActionResult> GenerateResume([FromBody] ResumeData data)
         {
+            var ownerEmail = string.IsNullOrWhiteSpace(data.OwnerEmail) ? data.Email : data.OwnerEmail;
+
             // Валидация
-            var error = RequireString(data.Email, "Email");
+            var error = RequireString(ownerEmail, "Email владельца");
             if (error != null) return error;
 
             error = RequireString(data.FirstName, "Имя");
@@ -123,15 +125,23 @@ namespace resume_service_backend.Controllers
             error = RequireString(data.LastName, "Фамилия");
             if (error != null) return error;
 
-            // Проверяем существование пользователя
-            var userExists = await _userRepository.ExistsAsync(data.Email);
+            // Проверяем существование пользователя-владельца в MariaDB (shadow DB для Foreign keys)
+            var userExists = await _userRepository.ExistsAsync(ownerEmail);
             if (!userExists)
-                return NotFound($"Пользователь с email {data.Email} не найден");
+            {
+                // Автоматически синхронизируем (создаем) пользователя в локальной БД, 
+                // если его еще там нет, чтобы не падала ошибка 'Cannot add child row (foreign key)'
+                await _userRepository.CreateAsync(ownerEmail);
+            }
+
+            // Устанавливаем динамический лимит резюме в зависимости от переданной роли пользователя
+            int maxResumes = data.OwnerRole.Equals("premium", StringComparison.OrdinalIgnoreCase) || 
+                             data.OwnerRole.Equals("admin", StringComparison.OrdinalIgnoreCase) ? 10 : 2;
 
             // Проверяем лимит резюме
-            var resumeCount = await _resumeRepository.GetCountByEmailAsync(data.Email);
-            if (resumeCount >= MAX_RESUMES_PER_USER)
-                return BadRequest($"Достигнут лимит резюме (максимум {MAX_RESUMES_PER_USER})");
+            var resumeCount = await _resumeRepository.GetCountByEmailAsync(ownerEmail);
+            if (resumeCount >= maxResumes)
+                return BadRequest($"Со статусом '{data.OwnerRole}' достигнут лимит резюме (максимум {maxResumes})");
 
             try
             {
@@ -156,7 +166,7 @@ namespace resume_service_backend.Controllers
                 // Создаём запрос для репозитория
                 var request = new CreateResumeRequest
                 {
-                    Email = data.Email,
+                    Email = ownerEmail,
                     PdfData = pdfBytes,
                     PdfFilename = filename,
                     Status = "private",
@@ -208,18 +218,33 @@ namespace resume_service_backend.Controllers
         }
 
         /// <summary>
+        /// GET: api/resumes/admin-all
+        /// Получить все резюме (включая приватные), только для администратора.
+        /// Возвращает модель PublicResume, чтобы фронтенду было удобно отображать.
+        /// </summary>
+        [HttpGet("admin-all")]
+        public async Task<ActionResult> GetAdminAll([FromQuery] string? tagIds)
+        {
+            var result = await _resumeRepository.GetAllByTagsForAdminAsync(tagIds);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// DELETE: api/resumes/{id}
-        /// Удалить резюме
+        /// Удалить резюме (Требует совпадения email или роль=admin)
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteResume(int id)
+        public async Task<ActionResult> DeleteResume(int id, [FromQuery] string email, [FromQuery] string role = "user")
         {
-            var error = RequirePositive(id, "ID резюме");
-            if (error != null) return error;
+            if (string.IsNullOrWhiteSpace(email) && role != "admin")
+                return Unauthorized("Требуется авторизация для выполнения этого действия.");
 
             var resume = await _resumeRepository.GetByIdAsync(id);
             if (resume == null)
-                return NotFound("Резюме не найдено");
+                return NotFound($"Резюме с ID {id} не найдено");
+
+            if (role != "admin" && resume.Email != email)
+                return StatusCode(403, "У вас нет прав на удаление этого резюме.");
 
             await _resumeRepository.DeleteAsync(id);
             

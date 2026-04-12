@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Спецификация микросервиса авторизации</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .document {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 50px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            font-size: 1.2rem;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .content {
+            padding: 50px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            color: #2d3748;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            display: inline-block;
+        }
+        
+        .subsection {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 15px;
+        }
+        
+        .subsection h3 {
+            color: #4a5568;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .subsection h4 {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+        }
+        
+        .badge-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0 5px 5px 0;
+        }
+        
+        .badge-standard { background: #48bb78; color: white; }
+        .badge-premium { background: #ecc94b; color: #744210; }
+        .badge-admin { background: #f56565; color: white; }
+        
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+        
+        .endpoint {
+            background: #ebf4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        
+        .endpoint h4 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-family: 'Fira Code', monospace;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+        
+        .method-post { background: #48bb78; color: white; }
+        .method-get { background: #4299e1; color: white; }
+        
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .param-table th {
+            text-align: left;
+            padding: 10px;
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .param-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .flow-diagram {
+            background: white;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .flow-step {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            margin: 0 10px;
+            font-weight: 700;
+        }
+        
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #fbbf24;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        
+        .note strong {
+            color: #92400e;
+        }
+        
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="header">
+            <h1>⚡ Микросервис авторизации</h1>
+            <div class="badge">TypeScript • Токен + Слепок • Вечная сессия</div>
+        </div>
+        
+        <div class="content">
+            <!-- База данных -->
+            <div class="section">
+                <h2 class="section-title">🗄️ База данных (PostgreSQL / MongoDB)</h2>
+                
+                <div class="code-block">
+// Коллекция/таблица: users<br>
+{<br>
+  email: string,                    // уникальный, primary key<br>
+  passwordHash: string,              // bcrypt + соль<br>
+<br>  
+  status: 'standard' | 'premium' | 'admin',  // статус пользователя<br>
+<br>  
+  // Токен (один на пользователя)<br>
+  token: string | null,              // случайная строка 64 символа<br>
+  tokenExpiresAt: Date | null,       // всегда +7 дней от последнего обновления<br>
+<br>  
+  // Слепок устройства<br>
+  fingerprint: string | null,        // хеш устройства (SHA-256)<br>
+<br>  
+  // Для подтверждения email (регистрация)<br>
+  verificationCode: string | null,   // 6 цифр<br>
+  verificationCodeExpiresAt: Date | null,  // +15 минут<br>
+  
+  // Для восстановления пароля<br>
+  resetCode: string | null,           // 6 цифр<br>
+  resetCodeExpiresAt: Date | null     // +15 минут<br>
+}<br>
+                </div>
+                
+                <div class="subsection">
+                    <h3>📊 Статусы пользователя</h3>
+                    <div>
+                        <span class="badge-status badge-standard">standard</span> — обычный пользователь
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span class="badge-status badge-premium">premium</span> — премиум-доступ
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span class="badge-status badge-admin">admin</span> — администратор
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Коды подтверждения и восстановления -->
+            <div class="section">
+                <h2 class="section-title">📧 Коды подтверждения и восстановления</h2>
+                
+                <div class="subsection">
+                    <h3>🔢 Формат кода</h3>
+                    <p>6 случайных цифр (например: 483921)</p>
+                    <p>Срок жизни: <strong>15 минут</strong></p>
+                </div>
+                
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 20px;">Процесс работы с кодами</h3>
+                    
+                    <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 20px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="flow-step">1</div>
+                            <p><strong>Запрос кода</strong><br>Пользователь вводит email</p>
+                        </div>
+                        <div style="font-size: 2rem; color: #667eea;">→</div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="flow-step">2</div>
+                            <p><strong>Генерация</strong><br>6 цифр, срок 15 мин</p>
+                        </div>
+                        <div style="font-size: 2rem; color: #667eea;">→</div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="flow-step">3</div>
+                            <p><strong>Отправка</strong><br>На email пользователя</p>
+                        </div>
+                        <div style="font-size: 2rem; color: #667eea;">→</div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="flow-step">4</div>
+                            <p><strong>Проверка</strong><br>Код + срок действия</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="note">
+                    <strong>🔐 Важно:</strong> После успешного подтверждения код сразу удаляется из БД (становится null). Повторно использовать тот же код нельзя.
+                </div>
+                
+                <hr>
+                
+                <h4>Сценарий 1: Подтверждение регистрации</h4>
+                <div class="code-block">
+1. POST /register → генерируем verificationCode >-<br>
+2. Отправляем код на email<br>
+3. POST /verify → проверяем verificationCode<br>
+4. При успехе: verificationCode = null, status = 'standard'<br>
+                </div>
+                
+                <h4 style="margin-top: 20px;">Сценарий 2: Восстановление пароля</h4>
+                <div class="code-block">
+1. POST /forgot-password → генерируем resetCode<br
+2. Отправляем код на email<br>
+3. POST /reset-password → проверяем resetCode<br>
+4. При успехе: resetCode = null, обновляем пароль<br>
+                </div>
+            </div>
+            
+            <!-- Эндпоинты -->
+            <div class="section">
+                <h2 class="section-title">🔄 Эндпоинты API</h2>
+                
+                <!-- Регистрация -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/register
+                    </h4>
+                    <p><strong>Цель:</strong> Создать пользователя, отправить код подтверждения</p>
+                    
+                    <table class="param-table">
+                        <tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr>
+                        <tr><td>email</td><td>string</td><td>Email пользователя</td></tr>
+                        <tr><td>password</td><td>string</td><td>Пароль (мин. 8 символов)</td></tr>
+                    </table>
+                    
+                    <p><strong>Успех (200):</strong></p>
+                    <div class="code-block">
+{
+  "message": "Код подтверждения отправлен на email"
+}
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Проверить, нет ли пользователя с таким email<br>
+2. Создать запись:<br>
+   - status = 'standard'  // сразу standard!<br>
+   - verificationCode = generate6DigitCode()<br>
+   - verificationCodeExpiresAt = now + 15min<br>
+   - passwordHash = bcrypt.hash(password)<br>
+   - token = null (пока нет)<br>
+3. Отправить код на email<br>
+4. Вернуть успех<br>
+                    </div>
+                </div>
+                
+                <!-- Подтверждение -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/verify
+                    </h4>
+                    <p><strong>Цель:</strong> Подтвердить email и выдать токен</p>
+                    
+                    <table class="param-table">
+                        <tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr>
+                        <tr><td>email</td><td>string</td><td>Email пользователя</td></tr>
+                        <tr><td>code</td><td>string</td><td>6 цифр из письма</td></tr>
+                    </table>
+                    
+                    <p><strong>Успех (200) + HttpOnly cookie:</strong></p>
+                    <div class="code-block">
+{
+  "message": "Регистрация подтверждена"
+}
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Найти пользователя по email<br>
+2. Проверить verificationCode и срок<br>
+3. Сгенерировать ТОКЕН (64 символа)<br>
+4. Вычислить СЛЕПОК из запроса<br>
+5. Обновить пользователя:<br>
+   - token = новый_токен<br>
+   - tokenExpiresAt = now + 7 дней<br>
+   - fingerprint = новый_слепок<br>
+   - verificationCode = null<br>
+6. Установить HttpOnly cookie с токеном<br>
+7. Вернуть успех<br>
+                    </div>
+                </div>
+                
+                <!-- Вход -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/login
+                    </h4>
+                    <p><strong>Цель:</strong> Аутентификация и выдача токена</p>
+                    
+                    <table class="param-table">
+                        <tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr>
+                        <tr><td>email</td><td>string</td><td>Email пользователя</td></tr>
+                        <tr><td>password</td><td>string</td><td>Пароль</td></tr>
+                    </table>
+                    
+                    <p><strong>Успех (200) + HttpOnly cookie:</strong></p>
+                    <div class="code-block">
+{
+  "message": "Вход выполнен"
+}
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Найти пользователя по email<br>
+2. Проверить пароль (bcrypt.compare)<br>
+3. Сгенерировать НОВЫЙ токен (старый умер)<br>
+4. Вычислить НОВЫЙ слепок устройства<br>
+5. Обновить пользователя:<br>
+   - token = новый_токен<br>
+   - tokenExpiresAt = now + 7 дней<br>
+   - fingerprint = новый_слепок<br>
+6. Установить HttpOnly cookie<br>
+7. Вернуть успех<br>
+                    </div>
+                    
+                    <div class="note">
+                        <strong>🔄 Важно:</strong> При каждом входе токен обновляется! 
+                        Старое устройство больше не сможет войти автоматически.
+                    </div>
+                </div>
+                
+                <!-- Проверка авторизации -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-get">GET</span> /api/auth/check
+                    </h4>
+                    <p><strong>Цель:</strong> Проверить токен и слепок, обновить токен если надо</p>
+                    
+                    <p><strong>Успех (200) + возможно новая cookie:</strong></p>
+                    <div class="code-block">
+{<br>
+  "user": {<br>
+    "email": "user@example.com",<br>
+    "status": "standard"  // или premium/admin<br>
+  }<br>
+}<br>
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Получить токен из cookie<br>
+2. Найти пользователя по токену<br>
+3. Вычислить текущий слепок из запроса<br>
+4. Сравнить с fingerprint в БД:<br>
+   - НЕ СОВПАДАЕТ → 401 (возможна кража)<br>
+5. Проверить срок токена:<br>
+   - Если осталось &lt; 1 дня:<br>
+     * Генерируем новый токен<br>
+     * tokenExpiresAt = now + 7 дней<br>
+     * Устанавливаем новую cookie<br>
+6. Вернуть данные пользователя<br>
+                    </div>
+                </div>
+                
+                <!-- Восстановление пароля - запрос кода -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/forgot-password
+                    </h4>
+                    <p><strong>Цель:</strong> Отправить код для сброса пароля</p>
+                    
+                    <table class="param-table">
+                        <tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr>
+                        <tr><td>email</td><td>string</td><td>Email пользователя</td></tr>
+                    </table>
+                    
+                    <p><strong>Успех (200):</strong></p>
+                    <div class="code-block">
+{<br>
+  "message": "Если email зарегистрирован, код будет отправлен"<br>
+}<br>
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Найти пользователя по email<br>
+2. Если найден:<br>
+   - resetCode = generate6DigitCode()<br>
+   - resetCodeExpiresAt = now + 15min<br>
+   - Отправить код на email<br>
+3. Вернуть одинаковый ответ (безопасность)<br>
+                    </div><br>
+                </div><br>
+                
+                <!-- Сброс пароля -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/reset-password
+                    </h4>
+                    <p><strong>Цель:</strong> Установить новый пароль по коду</p>
+                    
+                    <table class="param-table">
+                        <tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr>
+                        <tr><td>email</td><td>string</td><td>Email пользователя</td></tr>
+                        <tr><td>code</td><td>string</td><td>6 цифр из письма</td></tr>
+                        <tr><td>newPassword</td><td>string</td><td>Новый пароль</td></tr>
+                    </table>
+                    
+                    <p><strong>Успех (200):</strong></p>
+                    <div class="code-block">
+{<br>
+  "message": "Пароль изменен, выполните вход"<br>
+}<br>
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Найти пользователя по email<br>
+2. Проверить resetCode и срок<br>
+3. Обновить passwordHash<br>
+4. Очистить resetCode и resetCodeExpiresAt<br>
+5. НЕ МЕНЯТЬ ТОКЕН!<br> 
+   (пусть заново входит)<br>
+6. Вернуть успех<br>
+                    </div>
+                </div>
+                
+                <!-- Выход -->
+                <div class="endpoint">
+                    <h4>
+                        <span class="method method-post">POST</span> /api/auth/logout
+                    </h4>
+                    <p><strong>Цель:</strong> Инвалидировать текущий токен</p>
+                    
+                    <p><strong>Успех (200) + очистка cookie:</strong></p>
+                    <div class="code-block">
+{<br>
+  "message": "Выход выполнен"<br>
+}<br>
+                    </div>
+                    
+                    <p><strong>Логика:</strong></p>
+                    <div class="code-block">
+1. Получить токен из cookie<br>
+2. Найти пользователя<br>
+3. Очистить токен и слепок:<br>
+   - token = null<br>
+   - tokenExpiresAt = null<br>
+   - fingerprint = null<br>
+4. Очистить cookie<br>
+5. Вернуть успех<br>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Генерация слепка -->
+            <div class="section">
+                <h2 class="section-title">🖥️ Генерация слепка устройства ПОД ВОПРОСОМ!!!</h2>
+                
+                <div class="code-block">
+function createFingerprint(req: Request): string {
+  const data = {
+    // Заголовки HTTP
+    userAgent: req.headers['user-agent'],
+    acceptLanguage: req.headers['accept-language'],
+    acceptEncoding: req.headers['accept-encoding'],
+    
+    // Client Hints (современные браузеры)
+    secChUa: req.headers['sec-ch-ua'],
+    secChUaPlatform: req.headers['sec-ch-ua-platform'],
+    secChUaMobile: req.headers['sec-ch-ua-mobile'],
+    
+    // IP (осторожно, может меняться)
+    ip: req.ip || req.connection.remoteAddress,
+    
+    // DNT (Do Not Track)
+    dnt: req.headers['dnt']
+  };
+  
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify(data))
+    .digest('hex');
+}
+                </div>
+                
+                <div class="note">
+                    <strong>🎯 Важно:</strong> Слепок считается на БЭКЕНДЕ из данных запроса.
+                    Фронтенд не участвует в его создании — это защищает от подделки!
+                </div>
+            </div>
+            
+            <!-- Cookie -->
+            <div class="section">
+                <h2 class="section-title">🍪 Настройки HttpOnly cookie</h2>
+                
+                <div class="code-block">
+res.cookie('authToken', token, {<br>
+  httpOnly: true,           // Недоступна из JavaScript (защита от XSS)<br>
+  secure: true,             // Только по HTTPS<br>
+  sameSite: 'strict',       // Защита от CSRF<br>
+  maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 дней<br>
+  path: '/'                 // Доступна на всех маршрутах<br>
+});
+                </div>
+            </div>
+            
+            <!-- Итоговый флоу -->
+            <div class="section">
+                <h2 class="section-title">🔄 Полный флоу работы</h2>
+                
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 30px;">Регистрация</h3>
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">1</div>
+                            <p>POST /register<br>email+password</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">2</div>
+                            <p>Код на email</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">3</div>
+                            <p>POST /verify<br>email+code</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">4</div>
+                            <p>Получаем cookie<br>→ Профиль</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 30px;">Вход</h3>
+                    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">1</div>
+                            <p>POST /login<br>email+password</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">2</div>
+                            <p>Проверка пароля<br>Обновление слепка</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">3</div>
+                            <p>Получаем новую cookie<br>→ Профиль</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-diagram">
+                    <h3 style="margin-bottom: 30px;">Работа в приложении</h3>
+                    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">1</div>
+                            <p>Запрос к API<br>с cookie</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">2</div>
+                            <p>Проверка токена<br>и слепка</p>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <div class="flow-step">3</div>
+                            <p>200 OK<br>или 401 → logout</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Защита -->
+            <div class="section">
+                <h2 class="section-title">🛡️ Сценарии защиты</h2>
+                
+                <div class="subsection">
+                    <h3>🎭 Кража токена</h3>
+                    <div class="code-block">
+1. Хакер украл cookie с токеном<br>
+2. Пытается сделать запрос со своего устройства<br>
+3. Бэкенд вычисляет слепок хакера<br>
+4. Слепок НЕ совпадает с сохраненным в БД<br>
+5. Ответ: 401 Unauthorized<br>
+6. Токен не обновляется, хакер в пролете<br>
+                    </div>
+                </div>
+                
+                <div class="subsection">
+                    <h3>📱 Смена устройства (легальная)</h3>
+                    <div class="code-block">
+1. Пользователь заходит с нового ноутбука<br>
+2. Нет cookie → редирект на /login<br>
+3. Вводит email+пароль<br>
+4. Бэкенд обновляет слепок на новый<br>
+5. Выдает тот же самый токен (или новый)<br>
+6. Старое устройство больше не работает<br>
+                    </div>
+                </div>
+                
+                <div class="note">
+                    <strong>💡 Гениальность схемы:</strong> Пользователь на одном устройстве 
+                    может сидеть вечно — токен обновляется незаметно каждые 7 дней. 
+                    При смене устройства — только один вход с паролем.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
