@@ -1,117 +1,132 @@
-# 🚀 MyResume: Microservices Resume Platform
+# 🚀 MyResume: Full-Stack Microservices Resume Platform
 
-Современная платформа для создания и хостинга профессиональных резюме, построенная на микросервисной архитектуре. Проект объединяет мощь **.NET 8** для высокопроизводительной генерации документов и гибкость **Node.js** для управления безопасностью.
+Современная экосистема для создания, управления и публикации профессиональных резюме. Проект построен на принципах микросервисной архитектуры, обеспечивая высокую масштабируемость и четкое разделение ответственности между компонентами безопасности (Node.js) и контента (.NET 8).
+
+---
 
 ## 🏗 Архитектура системы
 
-Проект разделен на три независимых сервиса, взаимодействующих между собой через REST API:
+Проект объединяет три изолированные среды, работающие синхронно:
 
 ```mermaid
 graph TD
-    Client[Frontend: SvelteKit] -->|Auth & RBAC| AuthService[Auth Service: Node.js/Express]
-    Client -->|CRUD & Search| ResumeService[Resume Service: .NET 8]
-    AuthService -->|Data| MongoDB[(MongoDB: Users)]
-    ResumeService -->|Data| MariaDB[(MariaDB: Resumes)]
-    ResumeService -.->|Verify Auth| AuthService
+    subgraph "Frontend Layer"
+        Client[SvelteKit UI]
+    end
+
+    subgraph "Service Layer"
+        AuthSrv[Auth Service: Node.js/Express]
+        ResumeSrv[Resume Service: .NET 8]
+    end
+
+    subgraph "Data Layer"
+        MongoDB[(MongoDB: Identity)]
+        MariaDB[(MariaDB: Content)]
+    end
+
+    Client -->|JWT in HttpOnly Cookie| AuthSrv
+    Client -->|REST API| ResumeSrv
+    AuthSrv --- MongoDB
+    ResumeSrv --- MariaDB
+    ResumeSrv -.->|Security Handshake| AuthSrv
 ```
 
 ---
 
-## 🛠 Технологический стек
+## 🔐 Безопасность и Role-Based Access Control (RBAC)
 
-### **Frontend**
-- **Framework:** SvelteKit (реактивность и роутинг)
-- **Styling:** Vanilla CSS (Custom Design System)
-- **State Management:** Svelte Stores (Auth state)
-- **Aesthetics:** Google Fonts (Inter & Outfit), Glassmorphism
+Безопасность данных — наш приоритет. Мы используем **HttpOnly Cookies** для передачи JWT, что полностью защищает токены от XSS-атак. Система прав доступа (RBAC) позволяет гибко управлять лимитами и возможностями пользователей:
 
-### **Auth Service (Identity)**
-- **Runtime:** Node.js (Express)
-- **Database:** MongoDB (Mongoose)
-- **Security:** JWT (HttpOnly Cookies), Argon2 hashing
-- **Features:** Система ролей (Standard, Premium, Admin), верификация почты
-
-### **Resume Service (Content)**
-- **Runtime:** .NET 8 (C#)
-- **Database:** MariaDB (Dapper ORM)
-- **PDF Engine:** QuestPDF
-- **Features:** Динамическая генерация PDF, поиск по тегам, разграничение приватности
+### Матрица возможностей
+| Возможность | Standard | Premium | Admin |
+| :--- | :---: | :---: | :---: |
+| Слоты для резюме | 2 | 10 | 10 |
+| Экспорт в PDF (QuestPDF) | ✓ | ✓ | ✓ |
+| Глобальный поиск резюме | ✗ | ✓ | ✓ |
+| Модерация контента | ✗ | ✗ | ✓ |
+| Смена ролей пользователей | ✗ | ✗ | ✓ |
 
 ---
 
-## 🌟 Ключевые возможности
+## 🛠 Технический стек & Deep Dive
 
-### 🔐 Ролевая модель (RBAC)
-Система поддерживает три уровня доступа:
-1.  **Standard:** Создание до 2-х резюме, экспорт в PDF.
-2.  **Premium:** Увеличенный лимит (10 резюме), доступ к глобальному поиску и скрытым стилям.
-3.  **Admin:** Все возможности Premium + инструменты модерации (удаление и просмотр всех публичных работ).
+### **1. Identity Service (Node.js & MongoDB)**
+- **Безопасность:** Хеширование паролей через `bcrypt` и двухфакторная верификация через почту.
+- **Архитектура:** Использование паттерна `Error Handler wrapper` для чистых асинхронных контроллеров.
 
-### 📄 Генерация документов
-Резюме генерируются на стороне сервера в реальном времени. Мы не используем сторонние API для конвертации HTML в PDF — всё отрисовывается нативно с помощью QuestPDF, что гарантирует идеальное качество и высокую скорость.
+### **2. Content Service (.NET 8 & MariaDB)**
+- **Performance:** Прямое использование **Dapper ORM** и хранимых процедур MySQL для минимизации накладных расходов на БД.
+- **Генерация:** **QuestPDF Engine** — отрисовка документов на C# с использованием декларативного подхода (Layout-based), что в 5-10 раз быстрее традиционных HTML-to-PDF решений.
+
+### **3. Frontend (SvelteKit)**
+- **State:** Реактивная система **Svelte Stores** для мгновенного обновления UI при смене ролей.
+- **Styling:** Использование современных CSS-переменных для создания гибкой дизайн-системы (Typography: Inter & Outfit).
 
 ---
 
-## 💻 Примеры реализации
+## 💻 Code Showcase (Инженерные решения)
 
-### **Backend (.NET): Декларативная генерация PDF**
-Пример того, как мы описываем структуру документа без использования тяжеловесных HTML-шаблонов:
+### **Frontend: Реактивное управление Auth-состоянием**
+Мы создали кастомный стор, который автоматически управляет состоянием загрузки и авторизации по всему приложению:
+
+```javascript
+function createAuthStore() {
+    const { subscribe, set, update } = writable({ user: null, isAuthenticated: false, isLoading: true });
+    return {
+        subscribe,
+        setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+        logout: () => set({ user: null, isAuthenticated: false, isLoading: false })
+    };
+}
+export const auth = createAuthStore();
+```
+
+### **Backend: Хранимые процедуры через Dapper**
+Для обеспечения целостности данных мы выносим сложную логику (например, создание резюме с привязкой тегов) на уровень базы данных:
 
 ```csharp
-header.Item().Text($"{data.FirstName} {data.LastName}")
-    .FontSize(36)
-    .Bold()
-    .FontColor(Colors.Black);
-
-// Контакты в одну строку
-header.Item().PaddingTop(15).Row(contacts =>
+public async Task<int> CreateWithTagsAsync(CreateResumeRequest request)
 {
-    if (!string.IsNullOrWhiteSpace(data.Email))
-        contacts.AutoItem().Text(data.Email);
-    
-    if (!string.IsNullOrWhiteSpace(data.Phone))
-        contacts.AutoItem().PaddingLeft(20).Text(data.Phone);
-});
+    var result = await QuerySingleProcAsync<dynamic>(
+        "sp_create_resume_with_tags",
+        new { p_email = request.Email, p_pdf_data = request.PdfData, p_tag_ids = request.TagIds }
+    );
+    return result?.resume_id ?? 0;
+}
 ```
 
-### **Security (Node.js): middleware контроля доступа**
-Защита роутов на основе ролей пользователя:
+### **Design: Дизайн-система на CSS-переменных**
+Единый источник истины для всей типографики проекта:
 
-```typescript
-export const requireRole = (allowedRoles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        message: "Доступ запрещен для вашей роли" 
-      });
-    }
-    next();
-  };
-};
+```css
+:root {
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em; /* Премиальный вид заголовков */
+}
 ```
 
 ---
 
 ## 🚀 Быстрый старт
 
-### Требования
-- Docker & Docker Compose
-- Node.js 20+
-- .NET 8 SDK
-
-### Запуск через Docker
-1. Клонируйте репозиторий.
-2. Выполните команду в корневой директории:
+### Развертывание в один клик (Docker Compose)
+Убедитесь, что у вас установлен Docker, и выполните:
 ```bash
 docker-compose up --build
 ```
-
-### Локальная разработка
-- **Frontend:** `npm run dev` в `/frontend/MyResume` (Порт 5173)
-- **Auth:** `npm run dev` в `/auth-service/auth-service` (Порт 3000)
-- **Resume:** `dotnet run` в `/resume_service_backend` (Порт 5052)
+*Docker-compose автоматически поднимет MariaDB, MongoDB и все микросервисы в изолированной сети.*
 
 ---
 
-## 📝 Лицензия
-Проект создан в учебных целях. Свободен для использования и модификации.
+## 📈 Будущее проекта
+- [ ] Интеграция с OpenAI API для автоматической генерации "About" на основе опыта.
+- [ ] Расширение палитры шаблонов PDF.
+- [ ] Мобильное приложение на Svelte Native.
+
+---
+**Разработано с вниманием к деталям и любовью к качественному коду.**
