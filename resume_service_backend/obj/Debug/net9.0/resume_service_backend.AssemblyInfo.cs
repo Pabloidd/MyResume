@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("MyResume-ResumeService-7c2f4a9e-1b3d-4e8a-9c2d-6f1a0e5b8d4c")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+79a0f3ad78e1c21e0962c464f2b98576818a2d9a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+801cf8e966fbd9af6a1429aa2177afa23acf1b0e")]
 [assembly: System.Reflection.AssemblyProductAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("resume_service_backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

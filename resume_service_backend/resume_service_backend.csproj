@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>MyResume-ResumeService-7c2f4a9e-1b3d-4e8a-9c2d-6f1a0e5b8d4c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

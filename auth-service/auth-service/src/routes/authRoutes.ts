@@ -13,7 +13,7 @@ import {
 } from '../controllers/authController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/role.js';
-import { getUsers, changeRole } from '../controllers/adminController.js';
+import { getUsers, changeRole, getStats } from '../controllers/adminController.js';
 import { getPremiumContent } from '../controllers/premiumController.js';
 
 const router = express.Router();
@@ -72,6 +72,7 @@ router.post('/logout', requireAuth, logout);
 
 // Только для админов
 router.get('/admin/users', requireAuth, requireRole(['admin']), getUsers);
+router.get('/admin/stats', requireAuth, requireRole(['admin']), getStats);
 router.post('/admin/change-role',
   requireAuth,
   requireRole(['admin']),

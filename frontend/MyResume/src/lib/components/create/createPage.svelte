@@ -4,11 +4,21 @@
   import { onMount } from 'svelte';
   import { auth } from '$lib/authStore';
   import { get } from 'svelte/store';
+  import {
+    loadTagsByCategories,
+    categoryDisplayNames
+  } from '$lib/tagCategories.js';
 
   let currentStep = 1;
   let totalSteps = 5;
   let isSubmitting = false;
   let submitError = '';
+
+  let aiModalOpen = false;
+  let aiQuestion = '';
+  let aiAnswer = '';
+  let aiLoading = false;
+  let aiError = '';
 
   // Валидационные ошибки для каждого шага
   let stepErrors = {
@@ -22,55 +32,22 @@
   // API базовый URL
   const API_BASE_URL = 'http://localhost:5052';
 
-  // Динамические теги из БД
+  // Динамические теги из БД (только категории с непустым ответом API)
   let tagsByCategory = {};
+  /** Порядок секций: IT, затем прочие по алфавиту — совпадает с порядком успешных запросов */
+  let categoryOrder = [];
   let allTags = [];
   let selectedSkills = [];
 
-  // Категории для отображения
-  const categoryDisplayNames = {
-    'frontend': 'Frontend',
-    'backend': 'Backend',
-    'database': 'Базы данных'
-  };
-
-  const categoryOrder = ['frontend', 'backend', 'database'];
-
-  // Загрузка тегов из БД для отображения
-  async function loadTags() {
+  async function refreshTagsFromApi() {
     try {
-      const categories = ['frontend', 'backend', 'database'];
-
-      for (const category of categories) {
-        const response = await fetch(`${API_BASE_URL}/api/tags/category/${category}`);
-
-        if (response.ok) {
-          const data = await response.json();
-          tagsByCategory[category] = data;
-        }
-      }
+      const { tagsByCategory: byCat, categoryOrder: order, allTags: tags } =
+        await loadTagsByCategories(API_BASE_URL);
+      tagsByCategory = { ...byCat };
+      categoryOrder = [...order];
+      allTags = [...tags];
     } catch (err) {
       console.error('Ошибка загрузки тегов:', err);
-    }
-  }
-
-  // Загрузка всех тегов для маппинга названий в ID
-  async function loadAllTagsForMapping() {
-    try {
-      const categories = ['frontend', 'backend', 'database'];
-      const all = [];
-
-      for (const category of categories) {
-        const response = await fetch(`${API_BASE_URL}/api/tags/category/${category}`);
-        if (response.ok) {
-          const data = await response.json();
-          all.push(...data);
-        }
-      }
-
-      allTags = all;
-    } catch (err) {
-      console.error('Ошибка загрузки тегов для маппинга:', err);
     }
   }
 
@@ -523,6 +500,45 @@
     };
   }
 
+  async function sendAiQuestion() {
+    const q = aiQuestion.trim();
+    if (!q) return;
+    aiLoading = true;
+    aiError = '';
+    aiAnswer = '';
+    try {
+      const user = get(auth).user;
+      const response = await fetch(`${API_BASE_URL}/api/ai/resume-consult`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerRole: user?.role || 'user',
+          question: q,
+          resume: prepareResumeData()
+        })
+      });
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+      if (!response.ok) {
+        aiError = data.error || 'Сервис временно недоступен';
+        if (import.meta.env.DEV && data.detail) {
+          aiError += `\n\n${data.detail}`;
+        }
+        return;
+      }
+      aiAnswer = data.answer || '';
+    } catch (e) {
+      console.error(e);
+      aiError = 'Сервис временно недоступен';
+    } finally {
+      aiLoading = false;
+    }
+  }
+
   // ========== ОТПРАВКА ДАННЫХ НА СЕРВЕР ==========
   async function submitResume() {
     if (!validateAllSteps()) {
@@ -569,8 +585,7 @@
   }
 
   onMount(async () => {
-    await loadTags();
-    await loadAllTagsForMapping();
+    await refreshTagsFromApi();
   });
 </script>
 
@@ -949,35 +964,56 @@
       <!-- Выбранные навыки -->
       {#if selectedSkills.length > 0}
         <div class="selected-skills">
-          <h3 class="section-subtitle">Выбранные навыки:</h3>
-          <div class="skills-cloud">
+          <div class="selected-skills-head">
+            <span class="selected-skills-label">Выбрано</span>
+            <span class="selected-skills-count">{selectedSkills.length}</span>
+          </div>
+          <p class="selected-skills-hint">Нажмите на тег, чтобы убрать навык</p>
+          <div class="skills-cloud skills-cloud--selected">
             {#each selectedSkills as skill}
-              <span class="skill-tag selected" on:click={() => toggleSkill(skill)}>
-                {skill} ✕
+              <span class="skill-tag skill-tag--compact skill-tag--picked selected" on:click={() => toggleSkill(skill)}>
+                <span class="skill-tag-text">{skill}</span>
+                <span class="skill-tag-remove" aria-hidden="true">×</span>
               </span>
             {/each}
           </div>
         </div>
       {/if}
 
-      <!-- Динамические теги по категориям из БД -->
-      {#each categoryOrder as category}
-        {#if tagsByCategory[category] && tagsByCategory[category].length > 0}
-          <div class="skills-section">
-            <h3 class="section-subtitle">{categoryDisplayNames[category] || category}</h3>
-            <div class="skills-cloud">
-              {#each tagsByCategory[category] as tag}
-                <span
-                        class="skill-tag {selectedSkills.includes(tag.name) ? 'selected' : ''}"
-                        on:click={() => toggleSkill(tag.name)}
-                >
-                  {tag.name}
+      <div class="skills-step-card">
+        <p class="skills-hint">
+          <span class="skills-hint-mark" aria-hidden="true"></span>
+          <span class="skills-hint-text">Разворачивайте категории по одной — так проще ориентироваться в списке.</span>
+        </p>
+
+        <div class="skills-accordion">
+        {#each categoryOrder as category, i}
+          {#if tagsByCategory[category] && tagsByCategory[category].length > 0}
+            <details class="skills-category-panel" open={i === 0}>
+              <summary class="skills-category-summary">
+                <span class="skills-category-title">{categoryDisplayNames[category] || category}</span>
+                <span class="skills-category-meta">
+                  <span class="skills-count">{tagsByCategory[category].length}</span>
+                  <span class="skills-chevron" aria-hidden="true"><span class="skills-chevron-inner"></span></span>
                 </span>
-              {/each}
-            </div>
-          </div>
-        {/if}
-      {/each}
+              </summary>
+              <div class="skills-panel-body">
+                <div class="skills-cloud skills-cloud--grid">
+                  {#each tagsByCategory[category] as tag}
+                    <span
+                      class="skill-tag skill-tag--compact {selectedSkills.includes(tag.name) ? 'selected' : ''}"
+                      on:click={() => toggleSkill(tag.name)}
+                    >
+                      {tag.name}
+                    </span>
+                  {/each}
+                </div>
+              </div>
+            </details>
+          {/if}
+        {/each}
+        </div>
+      </div>
 
       {#if stepErrors.step5}
         <div class="error-message step-error">{stepErrors.step5}</div>
@@ -1020,11 +1056,71 @@
   </div>
 </div>
 
+{#if $auth.user && ($auth.user.role === 'premium' || $auth.user.role === 'admin')}
+  <button
+    type="button"
+    class="ai-fab"
+    on:click={() => { aiModalOpen = true; aiError = ''; }}
+    aria-haspopup="dialog"
+  >
+    🤖 Спросить ИИ
+  </button>
+{/if}
+
+{#if aiModalOpen}
+  <div
+    class="ai-modal-backdrop"
+    role="button"
+    tabindex="-1"
+    aria-label="Закрыть"
+    on:click={() => (aiModalOpen = false)}
+    on:keydown={(e) => e.key === 'Escape' && (aiModalOpen = false)}
+  ></div>
+  <div class="ai-modal" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+    <div class="ai-modal-inner">
+      <div class="ai-modal-head">
+        <h2 id="ai-modal-title" class="ai-modal-title">ИИ-консультант по резюме</h2>
+        <button type="button" class="ai-modal-close" on:click={() => (aiModalOpen = false)} aria-label="Закрыть">×</button>
+      </div>
+      <p class="ai-modal-lead">
+        Задайте вопрос — в запрос уйдут уже заполненные поля черновика (имя, опыт, образование, навыки и т.д.).
+      </p>
+      <label class="ai-label" for="ai-q">Ваш вопрос</label>
+      <textarea
+        id="ai-q"
+        class="ai-textarea"
+        rows="3"
+        placeholder="Например: как лучше описать опыт менеджера по продажам?"
+        bind:value={aiQuestion}
+        disabled={aiLoading}
+      ></textarea>
+      <div class="ai-modal-actions">
+        <button type="button" class="ai-btn ai-btn-ghost" on:click={() => (aiModalOpen = false)} disabled={aiLoading}>Закрыть</button>
+        <button type="button" class="ai-btn ai-btn-primary" on:click={sendAiQuestion} disabled={aiLoading || !aiQuestion.trim()}>
+          {aiLoading ? 'Отправка…' : 'Отправить'}
+        </button>
+      </div>
+      {#if aiError}
+        <p class="ai-error" role="alert">{aiError}</p>
+      {/if}
+      {#if aiAnswer}
+        <div class="ai-answer-wrap">
+          <h3 class="ai-answer-title">Ответ</h3>
+          <div class="ai-answer">{aiAnswer}</div>
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 <style>
   .resume-creator {
     max-width: 900px;
+    width: 100%;
     margin: 0 auto;
-    padding: 2rem;
+    padding: clamp(0.85rem, 3vw, 2rem);
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .steps-container {
@@ -1245,21 +1341,255 @@
   }
 
   .selected-skills {
-    background: #f0f9ff;
-    padding: 1rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, #eff6ff 55%, #e0f2fe 100%);
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(102, 155, 188, 0.45);
+    box-shadow:
+      0 4px 20px rgba(29, 53, 87, 0.08),
+      0 0 0 1px rgba(255, 255, 255, 0.6) inset;
   }
 
-  .skills-section {
-    margin-bottom: 2rem;
+  .selected-skills-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .selected-skills-label {
+    font-family: var(--font-heading);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #457b9d;
+  }
+
+  .selected-skills-count {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1d3557;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(69, 123, 157, 0.35);
+    box-shadow: 0 1px 4px rgba(29, 53, 87, 0.06);
+  }
+
+  .selected-skills-hint {
+    margin: 0 0 0.65rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .skills-step-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 18px;
+    padding: 1.1rem 1rem 1.2rem;
+    border: 1px solid rgba(102, 155, 188, 0.35);
+    box-shadow:
+      0 8px 32px rgba(29, 53, 87, 0.07),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  }
+
+  .skills-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    color: #475569;
+    line-height: 1.45;
+  }
+
+  .skills-hint-mark {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.32em;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #457b9d, #669bbc);
+    box-shadow: 0 0 0 4px rgba(102, 155, 188, 0.22);
+  }
+
+  .skills-hint-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .skills-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .skills-category-panel {
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    border: 1px solid #e8eef4;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .skills-category-panel[open] {
+    border-color: rgba(69, 123, 157, 0.45);
+    box-shadow:
+      0 8px 28px rgba(29, 53, 87, 0.1),
+      0 0 0 1px rgba(69, 123, 157, 0.12);
+  }
+
+  .skills-category-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem 0.65rem 0.85rem;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1d3557;
+    user-select: none;
+    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+    border-left: 3px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .skills-category-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .skills-category-summary:focus-visible {
+    outline: 2px solid #457b9d;
+    outline-offset: 2px;
+    z-index: 1;
+  }
+
+  .skills-category-summary:hover {
+    background: linear-gradient(90deg, #f0f9ff 0%, #f8fafc 100%);
+  }
+
+  .skills-category-panel[open] .skills-category-summary {
+    background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+    border-left-color: #457b9d;
+  }
+
+  .skills-category-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+  }
+
+  .skills-category-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .skills-count {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #1d3557;
+    background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(69, 123, 157, 0.25);
+  }
+
+  .skills-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #e2e8f0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .skills-chevron-inner {
+    display: block;
+    width: 0.36rem;
+    height: 0.36rem;
+    border-right: 2px solid #457b9d;
+    border-bottom: 2px solid #457b9d;
+    transform: rotate(-45deg);
+    margin-top: -0.18rem;
+    transition: transform 0.25s ease, border-color 0.2s ease;
+  }
+
+  .skills-category-panel[open] .skills-chevron {
+    background: linear-gradient(135deg, #457b9d, #1d3557);
+    border-color: transparent;
+  }
+
+  .skills-category-panel[open] .skills-chevron-inner {
+    border-color: #fff;
+    transform: rotate(135deg);
+    margin-top: 0.1rem;
+  }
+
+  .skills-panel-body {
+    padding: 0.65rem 0.75rem 0.75rem;
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 40%);
+    border-top: 1px solid rgba(226, 232, 240, 0.9);
+    max-height: 12rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(69, 123, 157, 0.45) #f1f5f9;
+  }
+
+  .skills-panel-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .skills-panel-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #94a3b8, #64748b);
+    border-radius: 999px;
   }
 
   .skills-cloud {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1rem 0;
+    gap: 0.35rem;
+    margin: 0;
+  }
+
+  .skills-cloud--selected {
+    max-height: 6.75rem;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(69, 123, 157, 0.4) transparent;
+  }
+
+  .skills-cloud--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 0.4rem;
+  }
+
+  @media (min-width: 640px) {
+    .skills-cloud--grid {
+      grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr));
+    }
   }
 
   .skill-tag {
@@ -1273,13 +1603,60 @@
     transition: all 0.2s;
   }
 
+  .skill-tag--compact {
+    padding: 0.32rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    word-break: break-word;
+    hyphens: auto;
+    border: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    color: #334155;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .skill-tag--picked {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.55rem 0.38rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .skill-tag-remove {
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0.85;
+    line-height: 1;
+  }
+
   .skill-tag:hover {
     background: #e2e8f0;
   }
 
+  .skill-tag--compact:hover {
+    border-color: #94a3b8;
+    box-shadow: 0 2px 8px rgba(29, 53, 87, 0.08);
+    transform: translateY(-1px);
+  }
+
   .skill-tag.selected {
-    background: #2563eb;
-    color: white;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+  }
+
+  .skill-tag--compact.selected {
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .skill-tag--picked.selected {
+    background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%);
+    box-shadow: 0 3px 14px rgba(29, 53, 87, 0.28);
   }
 
   .experts-grid {
@@ -1438,8 +1815,203 @@
     .step-title { font-size: 0.9rem; }
     .step-subtitle { font-size: 0.7rem; }
     .form-input, .form-textarea, .form-select { padding: 0.6rem 0.8rem; font-size: 0.9rem; }
-    .skill-tag { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    .skill-tag--compact {
+      font-size: 0.66rem;
+      padding: 0.22rem 0.35rem;
+    }
     .nav-button { font-size: 1rem; padding: 0.6rem 1.5rem; }
     .experience-block, .education-block { padding: 1rem; }
+  }
+
+  .ai-fab {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.5rem;
+    z-index: 2400;
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.75rem 1.1rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, #457b9d 0%, #1d3557 100%);
+    box-shadow: 0 6px 24px rgba(29, 53, 87, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+
+  .ai-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(29, 53, 87, 0.4);
+  }
+
+  .ai-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+  }
+
+  .ai-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2501;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    pointer-events: none;
+  }
+
+  .ai-modal-inner {
+    pointer-events: auto;
+    width: 100%;
+    max-width: 32rem;
+    max-height: min(88vh, 36rem);
+    overflow: auto;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(102, 155, 188, 0.35);
+    box-shadow: 0 20px 60px rgba(29, 53, 87, 0.2);
+    padding: 1.25rem 1.35rem 1.4rem;
+  }
+
+  .ai-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .ai-modal-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1d3557;
+    letter-spacing: -0.02em;
+  }
+
+  .ai-modal-close {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .ai-modal-close:hover {
+    background: #e2e8f0;
+  }
+
+  .ai-modal-lead {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.45;
+  }
+
+  .ai-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #457b9d;
+    margin-bottom: 0.35rem;
+  }
+
+  .ai-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 0.65rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 5rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .ai-textarea:focus {
+    outline: 2px solid rgba(69, 123, 157, 0.45);
+    outline-offset: 1px;
+    border-color: #94a3b8;
+  }
+
+  .ai-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .ai-btn {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .ai-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .ai-btn-ghost {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .ai-btn-primary {
+    background: linear-gradient(135deg, #457b9d, #1d3557);
+    color: #fff;
+  }
+
+  .ai-error {
+    margin: 0 0 0.75rem;
+    font-size: 0.88rem;
+    color: #b91c1c;
+    background: #fef2f2;
+    padding: 0.5rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+  }
+
+  .ai-answer-wrap {
+    margin-top: 0.5rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .ai-answer-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #457b9d;
+  }
+
+  .ai-answer {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: #334155;
+    white-space: pre-wrap;
   }
 </style>

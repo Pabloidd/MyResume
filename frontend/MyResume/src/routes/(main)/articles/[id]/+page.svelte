@@ -69,7 +69,7 @@
             </div>
 
             <div class="article-content">
-                <p>{article.content}</p>
+                {@html article.content}
             </div>
 
             <div class="article-footer">
@@ -121,8 +121,10 @@
 
     .article-container {
         max-width: 800px;
+        width: 100%;
         margin: 0 auto;
         padding: 2rem 1.5rem;
+        box-sizing: border-box;
     }
 
     .back-btn {
@@ -197,8 +199,39 @@
         color: #334155;
     }
 
-    .article-content p {
+    /* :global — разметка из {@html} не получает scoped-атрибуты Svelte */
+    .article-content :global(p) {
         margin-bottom: 1.5rem;
+    }
+
+    .article-content :global(h2),
+    .article-content :global(h3) {
+        margin: 1.75rem 0 0.75rem;
+        color: #1e293b;
+        line-height: 1.35;
+    }
+
+    .article-content :global(h2) {
+        font-size: 1.65rem;
+    }
+
+    .article-content :global(h3) {
+        font-size: 1.35rem;
+    }
+
+    .article-content :global(ul),
+    .article-content :global(ol) {
+        margin: 0 0 1.25rem 1.25rem;
+        padding-left: 1.25rem;
+    }
+
+    .article-content :global(li) {
+        margin-bottom: 0.35rem;
+    }
+
+    .article-content :global(a) {
+        color: #2563eb;
+        text-decoration: underline;
     }
 
     .article-footer {
@@ -210,15 +243,35 @@
 
     @media (max-width: 768px) {
         .article-container {
-            padding: 1.5rem;
+            padding: 1.5rem 1rem;
         }
 
         .article-title {
-            font-size: 1.8rem;
+            font-size: clamp(1.35rem, 5vw, 1.8rem);
         }
 
         .article-content {
             font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .article-container {
+            padding: 1rem 0.75rem;
+        }
+
+        .article-content :global(ul),
+        .article-content :global(ol) {
+            margin-left: 0.5rem;
+            padding-left: 1rem;
+        }
+
+        .article-content :global(h2) {
+            font-size: 1.35rem;
+        }
+
+        .article-content :global(h3) {
+            font-size: 1.15rem;
         }
     }
 </style>

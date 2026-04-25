@@ -51,3 +51,37 @@ export const changeRole = catchAsync(async (req: AuthRequest, res: Response) => 
     }
   });
 });
+
+/** Сводка по пользователям (MongoDB) для админ-панели */
+export const getStats = catchAsync(async (_req: AuthRequest, res: Response) => {
+  const [byRole, byStatus, totalUsers] = await Promise.all([
+    User.aggregate<{ _id: string; count: number }>([
+      { $group: { _id: '$role', count: { $sum: 1 } } }
+    ]),
+    User.aggregate<{ _id: string; count: number }>([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]),
+    User.countDocuments()
+  ]);
+
+  const usersByRole = { user: 0, premium: 0, admin: 0 };
+  for (const row of byRole) {
+    const key = row._id as keyof typeof usersByRole;
+    if (key in usersByRole) usersByRole[key] = row.count;
+  }
+
+  const usersByStatus = { active: 0, pending: 0 };
+  for (const row of byStatus) {
+    const key = row._id as keyof typeof usersByStatus;
+    if (key in usersByStatus) usersByStatus[key] = row.count;
+  }
+
+  res.json({
+    success: true,
+    stats: {
+      totalUsers,
+      usersByRole,
+      usersByStatus
+    }
+  });
+});

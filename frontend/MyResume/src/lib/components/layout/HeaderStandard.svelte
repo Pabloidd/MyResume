@@ -21,9 +21,6 @@
     }
   }
 
-  function goToMain(){
-    goto(`${base}/`)
-  }
 </script>
 
 <header class="dashboard-header">
@@ -34,7 +31,7 @@
         
       <div class="nav-container">
         <nav class="main-nav">
-          {#if $auth.user && $auth.user.role !== 'user'}
+          {#if $auth.user && ($auth.user.role === 'premium' || $auth.user.role === 'admin')}
             <a href="{base}/search" class="nav-link" 
                class:isActive={$page.url.pathname === `${base}/search` || $page.url.pathname === `${base}/search/`}>
                Поиск Резюме
@@ -55,14 +52,19 @@
 
 <style>
   .dashboard-header {
-    background-color: rgba(102, 155, 188, 0.55);
+    background-color: var(--chrome-bg, rgba(102, 155, 188, 0.95));
+    backdrop-filter: var(--chrome-blur, blur(10px));
+    -webkit-backdrop-filter: var(--chrome-blur, blur(10px));
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
     padding: 0 2.5rem;
     padding-bottom: 0.75rem;
-
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   }
 
   .logo{

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using resume_service_backend.Options;
 using resume_service_backend.Repositories;
 using resume_service_backend.Services;
@@ -19,6 +20,12 @@ namespace resume_service_backend.Extensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<MariaDbOptions>(configuration.GetSection("MariaDB"));
+            services.Configure<DeepSeekOptions>(configuration.GetSection(DeepSeekOptions.SectionName));
+
+            services.AddHttpClient<IResumeAiConsultService, ResumeAiConsultService>(client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(2);
+            });
 
             //регистрируем сервисы, Scoped — новый экземпляр на каждый HTTP-запрос 
             services.AddScoped<IResumeRepository, ResumeRepository>();

@@ -134,11 +134,13 @@ namespace resume_service_backend.Controllers
                 await _userRepository.CreateAsync(ownerEmail);
             }
 
-            // Устанавливаем динамический лимит резюме в зависимости от переданной роли пользователя
-            int maxResumes = data.OwnerRole.Equals("premium", StringComparison.OrdinalIgnoreCase) || 
-                             data.OwnerRole.Equals("admin", StringComparison.OrdinalIgnoreCase) ? 10 : 2;
+            var ownerRoleNorm = (data.OwnerRole ?? "user").Trim();
+            if (ownerRoleNorm.Equals("standard", StringComparison.OrdinalIgnoreCase))
+                ownerRoleNorm = "user";
 
-            // Проверяем лимит резюме
+            int maxResumes = ownerRoleNorm.Equals("premium", StringComparison.OrdinalIgnoreCase) ||
+                             ownerRoleNorm.Equals("admin", StringComparison.OrdinalIgnoreCase) ? 10 : 2;
+
             var resumeCount = await _resumeRepository.GetCountByEmailAsync(ownerEmail);
             if (resumeCount >= maxResumes)
                 return BadRequest($"Со статусом '{data.OwnerRole}' достигнут лимит резюме (максимум {maxResumes})");

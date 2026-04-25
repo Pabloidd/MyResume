@@ -14,8 +14,9 @@
     // Реактивные переменные для ролей и лимитов
     $: userEmail = $auth.user?.email || 'Гость';
     $: userRole = $auth.user?.role || 'user';
+    $: isBaseTier = userRole === 'user' || userRole === 'standard';
     $: isPremium = userRole === 'premium' || userRole === 'admin';
-    $: maxResumes = userRole === 'user' ? 2 : 10;
+    $: maxResumes = isBaseTier ? 2 : 10;
     $: currentResumeCount = resumes.length;
     $: isLimitReached = currentResumeCount >= maxResumes;
 
@@ -61,6 +62,8 @@
         switch(role) {
             case 'admin': return 'АДМИНИСТРАТОР';
             case 'premium': return 'ПРЕМИУМ';
+            case 'standard':
+            case 'user':
             default: return 'СТАНДАРТ';
         }
     }
@@ -82,7 +85,7 @@
     {#if isLimitReached}
         <p class="limit-message">
             Вы использовали все доступные слоты ({currentResumeCount}/{maxResumes}). 
-            {#if userRole === 'user'}
+            {#if isBaseTier}
                 <button class="upgrade-link" on:click={goToPremium}>Перейдите на Премиум</button>, чтобы создавать до 10 резюме.
             {/if}
         </p>
@@ -115,45 +118,60 @@
     </div>
     
     <!-- Повысить статус (показываем только обычным пользователям) -->
-    {#if userRole === 'user'}
+    {#if isBaseTier}
         <div class="info-row">
             <button on:click={goToPremium} class="action-link upgrade-status">Повысить статус</button>
         </div>
     {/if}
 </div>
 
-<!-- Сообщения о возможностях в зависимости от роли -->
-{#if userRole === 'user'}
-    <section class="features-section">
-        <h3 class="features-title">В статусе стандарт вам доступно следующее:</h3>
-        <ul class="features-list">
-            <li>Создание до 2-х резюме одновременно</li>
-            <li>Возможность публикации резюме в общий доступ</li>
-            <li>Скачивание резюме в формате PDF</li>
+<!-- Тариф и возможности по роли -->
+{#if isBaseTier}
+    <section class="tariff-card tariff-card--standard">
+        <h3 class="tariff-card-title">Тариф «Стандарт»</h3>
+        <ul class="tariff-list">
+            <li><strong>Создание резюме</strong> — не более <strong>2</strong> штук</li>
+            <li><strong>Конструктор резюме</strong> — полный доступ</li>
+            <li><strong>ИИ-консультант</strong> — недоступен</li>
+            <li><strong>Поиск резюме</strong> — недоступен</li>
         </ul>
+        <p class="tariff-pitch">
+            Вам доступно бесплатное создание до 2 резюме. Перейдите на Premium, чтобы снять лимиты, получить доступ к ИИ-консультанту и поиску резюме.
+        </p>
+        <button type="button" class="tariff-upgrade-btn" on:click={goToPremium}>Узнать про Premium</button>
     </section>
-
-    <section class="premium-section">
-        <h3 class="premium-title">Повысьте статус до ПРЕМИУМ! Вам откроются новые возможности:</h3>
-        <ul class="premium-list">
-            <li>Создание до 10 резюме одновременно</li>
-            <li>Доступ к разделу «Поиск резюме» (просмотр чужих работ)</li>
-            <li>Приоритетная поддержка и новые стили оформления</li>
+{:else if userRole === 'premium'}
+    <section class="tariff-card tariff-card--premium">
+        <h3 class="tariff-card-title">Тариф Premium</h3>
+        <ul class="tariff-list">
+            <li><strong>Создание резюме</strong> — до <strong>10</strong> штук</li>
+            <li><strong>Конструктор резюме</strong> — полный доступ</li>
+            <li><strong>ИИ-консультант</strong> — доступен в конструкторе (кнопка «Спросить ИИ»)</li>
+            <li><strong>Поиск резюме</strong> — доступен</li>
         </ul>
+        <p class="tariff-summary tariff-summary--premium">
+            Ваш тариф Premium. Вам доступно до 10 резюме, ИИ-консультант, поиск резюме.
+        </p>
     </section>
-{:else}
-    <section class="premium-active-section">
-        <h3 class="premium-active-title">У вас активен статус {isPremium ? 'Премиум' : 'Админа'}!</h3>
-        <p>Вам доступны все продвинутые функции сервиса:</p>
-        <ul class="features-list">
-            <li>До 10 активных резюме</li>
-            <li>Полный доступ к разделу «Поиск резюме»</li>
-            <li>Все эксклюзивные стили оформления</li>
-            {#if userRole === 'admin'}
-                <li><strong>Права модератора:</strong> возможность удалять резюме в разделе поиска</li>
-                <li style="margin-top: 1rem;"><button on:click={() => goto(`${base}/profile/admin`)} class="action-link" style="background: #2563eb; color: white;">Управление пользователями</button></li>
-            {/if}
+{:else if userRole === 'admin'}
+    <section class="tariff-card tariff-card--admin">
+        <h3 class="tariff-card-title">Тариф администратора</h3>
+        <p class="tariff-admin-lead">Все возможности Premium, плюс инструменты модерации и аналитики.</p>
+        <ul class="tariff-list">
+            <li><strong>Создание резюме</strong> — до <strong>10</strong> штук</li>
+            <li><strong>Конструктор</strong> и <strong>ИИ-консультант</strong></li>
+            <li><strong>Поиск резюме</strong> — полный доступ</li>
+            <li><strong>Удаление любых резюме</strong> из результатов поиска (кнопка «Удалить» с подтверждением)</li>
+            <li><strong>Управление пользователями</strong> и ролями</li>
+            <li><strong>Статистика платформы</strong></li>
         </ul>
+        <p class="tariff-summary tariff-summary--admin">
+            Вы — администратор. Вам доступны все функции Premium, а также модерация: удаление любых резюме из поиска, управление пользователями и просмотр статистики.
+        </p>
+        <div class="tariff-admin-actions">
+            <button type="button" class="action-link admin-stats-btn" on:click={() => goto(`${base}/profile/admin/stats`)}>Статистика</button>
+            <button type="button" class="action-link admin-panel-btn" on:click={() => goto(`${base}/profile/admin`)}>Управление пользователями</button>
+        </div>
     </section>
 {/if}
 
@@ -334,6 +352,55 @@
         border-color: #1d3557;
     }
 
+    li.admin-action-item {
+        list-style: none;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    li.admin-action-item--lead {
+        margin-top: 1rem;
+    }
+
+    li.admin-action-item:not(.admin-action-item--lead) {
+        margin-top: 0.65rem;
+    }
+
+    li.admin-action-item .action-link {
+        width: 100%;
+        max-width: 22rem;
+    }
+
+    @media (max-width: 480px) {
+        li.admin-action-item .action-link {
+            max-width: 100%;
+        }
+    }
+
+    .admin-panel-btn {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+    }
+
+    .admin-panel-btn:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+        color: white;
+    }
+
+    .admin-stats-btn {
+        background: #f0fdfa;
+        color: #0f766e;
+        border-color: #5eead4;
+    }
+
+    .admin-stats-btn:hover {
+        background: #ccfbf1;
+        border-color: #0d9488;
+        color: #115e59;
+    }
+
     .features-section, .premium-section, .premium-active-section {
         padding: 2rem;
         border-radius: 16px;
@@ -356,6 +423,138 @@
     .features-list li, .premium-list li {
         padding: 0.3rem 0;
         color: #475569;
+    }
+
+    .tariff-card {
+        padding: 2rem 2rem 1.75rem;
+        border-radius: 18px;
+        margin-bottom: 2rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 32px rgba(29, 53, 87, 0.07);
+    }
+
+    .tariff-card--standard {
+        background: linear-gradient(145deg, #f8fafc 0%, #f0f9ff 100%);
+        border-left: 6px solid #457b9d;
+    }
+
+    .tariff-card--premium {
+        background: linear-gradient(145deg, #f0fdf4 0%, #ecfeff 100%);
+        border-left: 6px solid #16a34a;
+    }
+
+    .tariff-card--admin {
+        background: linear-gradient(145deg, #fffbeb 0%, #fff7ed 100%);
+        border-left: 6px solid #ea580c;
+    }
+
+    .tariff-card-title {
+        font-family: var(--font-heading);
+        color: #1d3557;
+        margin: 0 0 1rem;
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .tariff-admin-lead {
+        margin: 0 0 1rem;
+        color: #475569;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .tariff-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.25rem;
+    }
+
+    .tariff-list li {
+        position: relative;
+        padding: 0.45rem 0 0.45rem 1.35rem;
+        color: #334155;
+        line-height: 1.45;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .tariff-list li:last-child {
+        border-bottom: none;
+    }
+
+    .tariff-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.85rem;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #457b9d, #669bbc);
+    }
+
+    .tariff-pitch {
+        margin: 0 0 1.25rem;
+        padding: 1rem 1.1rem;
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 12px;
+        border: 1px solid #bfdbfe;
+        color: #1e3a5f;
+        font-size: 1.05rem;
+        line-height: 1.55;
+        font-weight: 500;
+    }
+
+    .tariff-upgrade-btn {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.65rem 1.35rem;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .tariff-upgrade-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    .tariff-summary {
+        margin: 0;
+        padding: 0.9rem 1rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        line-height: 1.5;
+        font-weight: 600;
+    }
+
+    .tariff-summary--premium {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid #bbf7d0;
+        color: #14532d;
+    }
+
+    .tariff-summary--admin {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #fed7aa;
+        color: #7c2d12;
+    }
+
+    .tariff-admin-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+    }
+
+    .tariff-admin-actions .action-link {
+        width: auto;
+        max-width: none;
     }
 
     .loading-resumes, .empty-resumes {

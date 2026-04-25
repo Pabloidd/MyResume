@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using QuestPDF.Fluent;
@@ -11,19 +10,33 @@ using resume_service_backend.Models;
 namespace resume_service_backend.Services
 {
     /// <summary>
-    /// Сервис генерации PDF с использованием QuestPDF
+    /// PDF резюме (QuestPDF): двухколоночный западный шаблон, типографика и сетка под печать A4.
     /// </summary>
     public class PdfGenerationService : IPdfGenerationService
     {
-        // Настройка лицензии QuestPDF (бесплатная для некоммерческого использования)
+        /// <summary>Windows/macOS с системным шрифтом; при отсутствии QuestPDF подставит метрику ближайшего sans.</summary>
+        private const string BodyFont = "Segoe UI";
+
+        private static readonly Color Paper = Color.FromRGB(255, 255, 255);
+        private static readonly Color Ink = Color.FromRGB(20, 24, 33);
+        private static readonly Color InkSoft = Color.FromRGB(55, 62, 78);
+        private static readonly Color Muted = Color.FromRGB(107, 114, 128);
+        private static readonly Color Accent = Color.FromRGB(30, 90, 125);
+        private static readonly Color AccentSoft = Color.FromRGB(232, 241, 248);
+        private static readonly Color Hairline = Color.FromRGB(229, 231, 235);
+        private static readonly Color SidebarFill = Color.FromRGB(249, 250, 251);
+
+        private static readonly TextStyle BodyStyle = TextStyle.Default
+            .FontFamily(BodyFont)
+            .FontSize(9.75f)
+            .LineHeight(1.48f)
+            .FontColor(InkSoft);
+
         static PdfGenerationService()
         {
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
-        /// <summary>
-        /// Генерирует PDF-резюме в виде байтового массива
-        /// </summary>
         public async Task<byte[]> GenerateResumePdfAsync(ResumeData data)
         {
             return await Task.Run(() =>
@@ -33,9 +46,6 @@ namespace resume_service_backend.Services
             });
         }
 
-        /// <summary>
-        /// Генерирует PDF и сохраняет в файл (для отладки)
-        /// </summary>
         public async Task<string> GenerateAndSaveAsync(ResumeData data, string outputPath)
         {
             return await Task.Run(() =>
@@ -46,259 +56,397 @@ namespace resume_service_backend.Services
             });
         }
 
-        /// <summary>
-        /// Преобразует дату из формата YYYY-MM в читаемый вид
-        /// </summary>
-        private string FormatDate(string? yyyyMm)
+        private static bool TryParseYearMonth(string? raw, out int year, out int month)
         {
-            if (string.IsNullOrWhiteSpace(yyyyMm)) return "";
-            
-            var parts = yyyyMm.Split('-');
-            if (parts.Length != 2) return yyyyMm;
-            
-            if (!int.TryParse(parts[0], out var year) || !int.TryParse(parts[1], out var month))
-                return yyyyMm;
-            
-            if (month < 1 || month > 12) return yyyyMm;
-            
-            var monthNames = new[] { 
-                "января", "февраля", "марта", "апреля", "мая", "июня", 
-                "июля", "августа", "сентября", "октября", "ноября", "декабря" 
+            year = 0;
+            month = 0;
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            raw = raw.Trim();
+
+            if (DateTime.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                    out var dtIso))
+            {
+                year = dtIso.Year;
+                month = dtIso.Month;
+                return month is >= 1 and <= 12;
+            }
+
+            var parts = raw.Split('-', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2 &&
+                int.TryParse(parts[0], out year) &&
+                int.TryParse(parts[1], out month))
+                return month is >= 1 and <= 12;
+
+            return false;
+        }
+
+        private static string FormatMonthYear(string? yyyyMmOrIso)
+        {
+            if (!TryParseYearMonth(yyyyMmOrIso, out var year, out var month))
+                return (yyyyMmOrIso ?? "").Trim();
+
+            var monthNames = new[]
+            {
+                "января", "февраля", "марта", "апреля", "мая", "июня",
+                "июля", "августа", "сентября", "октября", "ноября", "декабря"
             };
-            
+
             return $"{monthNames[month - 1]} {year}";
         }
 
-        /// <summary>
-        /// Создаёт документ QuestPDF на основе данных резюме
-        /// </summary>
+        private static string FormatPeriod(string? start, string? end, bool current)
+        {
+            var a = FormatMonthYear(start);
+            if (string.IsNullOrEmpty(a)) return "";
+            var b = current ? "настоящее время" : FormatMonthYear(end);
+            if (string.IsNullOrEmpty(b)) b = "—";
+            return $"{a} — {b}";
+        }
+
+        private static IEnumerable<string> SplitDescriptionLines(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description)) yield break;
+            var parts = description.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            var nonEmpty = parts.Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+            if (nonEmpty.Count == 0) yield break;
+            if (nonEmpty.Count == 1 && nonEmpty[0].Length < 200)
+            {
+                yield return nonEmpty[0];
+                yield break;
+            }
+
+            foreach (var line in nonEmpty)
+                yield return line;
+        }
+
+        private static void ComposeMainColumn(ColumnDescriptor body, ResumeData data, List<string> skills, bool appendSkills)
+        {
+            body.Spacing(0);
+
+            if (!string.IsNullOrWhiteSpace(data.About))
+            {
+                body.Item().PaddingBottom(16).Column(block =>
+                {
+                    SectionTitle(block, "О СЕБЕ");
+                    block.Item().PaddingTop(7)
+                        .Text(data.About.Trim())
+                        .FontFamily(BodyFont)
+                        .FontSize(9.75f)
+                        .LineHeight(1.52f)
+                        .FontColor(InkSoft)
+                        .AlignLeft();
+                });
+            }
+
+            if (data.WorkExperience is { Count: > 0 })
+            {
+                var experiences = data.WorkExperience
+                    .Where(exp => !string.IsNullOrWhiteSpace(exp.Company) || !string.IsNullOrWhiteSpace(exp.Position))
+                    .ToList();
+                if (experiences.Count > 0)
+                {
+                    body.Item().PaddingBottom(4).Column(workBlock =>
+                    {
+                        SectionTitle(workBlock, "ОПЫТ РАБОТЫ");
+
+                        foreach (var exp in experiences)
+                        {
+                            workBlock.Item().PaddingTop(12).Column(entry =>
+                            {
+                                var period = FormatPeriod(exp.StartDate, exp.EndDate, exp.Current);
+
+                                entry.Item().Row(titleRow =>
+                                {
+                                    titleRow.RelativeItem().Text(t =>
+                                    {
+                                        if (!string.IsNullOrWhiteSpace(exp.Position))
+                                            t.Span(exp.Position.Trim()).Bold().FontSize(11.25f).FontColor(Ink);
+                                        else if (!string.IsNullOrWhiteSpace(exp.Company))
+                                            t.Span(exp.Company.Trim()).Bold().FontSize(11.25f).FontColor(Ink);
+                                    });
+
+                                    if (!string.IsNullOrWhiteSpace(period))
+                                    {
+                                        titleRow.AutoItem().AlignRight().PaddingLeft(8)
+                                            .Text(period)
+                                            .FontFamily(BodyFont)
+                                            .FontSize(8.25f)
+                                            .SemiBold()
+                                            .FontColor(Accent);
+                                    }
+                                });
+
+                                if (!string.IsNullOrWhiteSpace(exp.Company) && !string.IsNullOrWhiteSpace(exp.Position))
+                                {
+                                    entry.Item().PaddingTop(3).Text(exp.Company.Trim())
+                                        .FontFamily(BodyFont)
+                                        .FontSize(9.35f)
+                                        .SemiBold()
+                                        .FontColor(Muted);
+                                }
+                                else if (!string.IsNullOrWhiteSpace(exp.Company))
+                                {
+                                    entry.Item().PaddingTop(3).Text(exp.Company.Trim())
+                                        .FontFamily(BodyFont)
+                                        .FontSize(9.35f)
+                                        .SemiBold()
+                                        .FontColor(Muted);
+                                }
+
+                                foreach (var line in SplitDescriptionLines(exp.Description))
+                                {
+                                    entry.Item().PaddingTop(5).Row(bullet =>
+                                    {
+                                        bullet.ConstantItem(12).PaddingTop(1).Text("▸")
+                                            .FontFamily(BodyFont)
+                                            .FontSize(8.5f)
+                                            .FontColor(Accent);
+                                        bullet.RelativeItem().Text(line)
+                                            .FontFamily(BodyFont)
+                                            .FontSize(9.15f)
+                                            .LineHeight(1.45f)
+                                            .FontColor(InkSoft);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            if (data.Education is { Count: > 0 })
+            {
+                body.Item().PaddingTop(18).Column(eduBlock =>
+                {
+                    SectionTitle(eduBlock, "ОБРАЗОВАНИЕ");
+
+                    foreach (var ed in data.Education)
+                    {
+                        if (string.IsNullOrWhiteSpace(ed.Institution)) continue;
+
+                        eduBlock.Item().PaddingTop(12).Column(entry =>
+                        {
+                            var period = FormatPeriod(ed.StartDate, ed.EndDate, ed.Current);
+                            if (!string.IsNullOrWhiteSpace(period))
+                            {
+                                entry.Item().Text(period)
+                                    .FontFamily(BodyFont)
+                                    .FontSize(8.25f)
+                                    .SemiBold()
+                                    .FontColor(Accent);
+                            }
+
+                            entry.Item().PaddingTop(3).Text(ed.Institution.Trim())
+                                .FontFamily(BodyFont)
+                                .FontSize(11.1f)
+                                .Bold()
+                                .FontColor(Ink);
+
+                            var line = string.Join(" · ",
+                                new[] { ed.Degree, ed.Field }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                            if (!string.IsNullOrWhiteSpace(line))
+                            {
+                                entry.Item().PaddingTop(3).Text(line)
+                                    .FontFamily(BodyFont)
+                                    .FontSize(9.35f)
+                                    .FontColor(Muted);
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (appendSkills && skills.Count > 0)
+            {
+                body.Item().PaddingTop(18).Column(skBlock =>
+                {
+                    SectionTitle(skBlock, "НАВЫКИ");
+                    skBlock.Item().PaddingTop(6).Column(skillCol =>
+                    {
+                        skillCol.Spacing(5);
+                        foreach (var s in skills)
+                        {
+                            skillCol.Item().Row(r =>
+                            {
+                                r.ConstantItem(10).Text("•")
+                                    .FontFamily(BodyFont)
+                                    .FontSize(9f)
+                                    .FontColor(Accent);
+                                r.RelativeItem().Text(s)
+                                    .FontFamily(BodyFont)
+                                    .FontSize(9.1f)
+                                    .FontColor(InkSoft)
+                                    .LineHeight(1.35f);
+                            });
+                        }
+                    });
+                });
+            }
+        }
+
         private Document CreateDocument(ResumeData data)
         {
+            var fullName = $"{data.FirstName} {data.LastName}".Trim();
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = "Резюме";
+
+            var skills = data.Skills?.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList() ?? new List<string>();
+            var hasContacts = !string.IsNullOrWhiteSpace(data.Email) || !string.IsNullOrWhiteSpace(data.Phone);
+            var useSidebar = hasContacts || skills.Count > 0;
+
             return Document.Create(container =>
             {
                 container.Page(page =>
                 {
-                    // Настройки страницы A4
                     page.Size(PageSizes.A4);
-                    page.Margin(2f, Unit.Centimetre);
-                    
-                    // Основной шрифт
-                    page.DefaultTextStyle(x => x
-                        .FontFamily("Times New Roman")
-                        .FontSize(11f)
-                        .LineHeight(1.5f));
+                    page.MarginLeft(1.15f, Unit.Centimetre);
+                    page.MarginRight(1.15f, Unit.Centimetre);
+                    page.MarginTop(1.05f, Unit.Centimetre);
+                    page.MarginBottom(1f, Unit.Centimetre);
+                    page.PageColor(Paper);
 
-                    // ===== ШАПКА (только на первой странице) =====
-                    page.Header().ShowOnce().Column(header =>
+                    page.DefaultTextStyle(BodyStyle);
+
+                    page.Content().Column(main =>
                     {
-                        // Имя и фамилия
-                        header.Item().Text($"{data.FirstName} {data.LastName}")
-                            .FontSize(36)
-                            .Bold()
-                            .FontColor(Colors.Black);
-                        
-                        // Желаемая должность - нормальный интервал
-                        if (!string.IsNullOrWhiteSpace(data.DesiredPosition))
-                        {
-                            header.Item().PaddingTop(5).Text(data.DesiredPosition)
-                                .FontSize(14)
-                                .FontColor(Colors.Grey.Medium)
-                                .SemiBold();
-                        }
+                        main.Spacing(0);
 
-                        // Контакты без иконок (просто текст)
-                        header.Item().PaddingTop(15).Row(contacts =>
+                        // ——— Шапка ———
+                        main.Item().Column(header =>
                         {
-                            if (!string.IsNullOrWhiteSpace(data.Email))
+                            header.Item().AlignCenter()
+                                .Text(fullName)
+                                .FontFamily(BodyFont)
+                                .FontSize(26)
+                                .Bold()
+                                .FontColor(Ink);
+
+                            if (!string.IsNullOrWhiteSpace(data.DesiredPosition))
                             {
-                                contacts.AutoItem().Text(data.Email);
+                                header.Item().PaddingTop(5).AlignCenter()
+                                    .Text(data.DesiredPosition.Trim())
+                                    .FontFamily(BodyFont)
+                                    .FontSize(11.25f)
+                                    .SemiBold()
+                                    .FontColor(Accent);
                             }
-                            
-                            if (!string.IsNullOrWhiteSpace(data.Phone))
-                            {
-                                contacts.AutoItem().PaddingLeft(20).Text(data.Phone);
-                            }
+
+                            header.Item().PaddingTop(12)
+                                .LineHorizontal(0.9f)
+                                .LineColor(Accent);
                         });
 
-                        // Декоративная линия
-                        header.Item().PaddingVertical(15).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
+                        // ——— Две колонки (или одна, если нет контактов и навыков) ———
+                        main.Item().PaddingTop(14).Row(row =>
+                        {
+                            row.Spacing(0);
+
+                            if (useSidebar)
+                            {
+                                row.RelativeItem(3).Background(SidebarFill)
+                                    .BorderRight(0.65f)
+                                    .BorderColor(Hairline)
+                                    .PaddingVertical(14)
+                                    .PaddingHorizontal(13).Column(side =>
+                                    {
+                                        side.Spacing(12);
+
+                                        if (hasContacts)
+                                        {
+                                            SectionTitle(side, "КОНТАКТЫ");
+                                            side.Item().Column(contacts =>
+                                            {
+                                                contacts.Spacing(9);
+                                                ContactBlock(contacts, "Email", data.Email);
+                                                ContactBlock(contacts, "Телефон", data.Phone);
+                                            });
+                                        }
+
+                                        if (skills.Count > 0)
+                                        {
+                                            if (hasContacts) side.Item().PaddingTop(6);
+                                            SectionTitle(side, "НАВЫКИ");
+                                            side.Item().PaddingTop(6).Column(skillCol =>
+                                            {
+                                                skillCol.Spacing(5);
+                                                foreach (var s in skills)
+                                                {
+                                                    skillCol.Item().Row(r =>
+                                                    {
+                                                        r.ConstantItem(10).Text("•")
+                                                            .FontFamily(BodyFont)
+                                                            .FontSize(9f)
+                                                            .FontColor(Accent);
+                                                        r.RelativeItem().Text(s)
+                                                            .FontFamily(BodyFont)
+                                                            .FontSize(9.1f)
+                                                            .FontColor(InkSoft)
+                                                            .LineHeight(1.35f);
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                row.RelativeItem(7).PaddingLeft(16).PaddingTop(2)
+                                    .Column(body => ComposeMainColumn(body, data, skills, appendSkills: false));
+                            }
+                            else
+                            {
+                                row.RelativeItem(10).PaddingTop(2)
+                                    .Column(body => ComposeMainColumn(body, data, skills, appendSkills: true));
+                            }
+                        });
                     });
 
-                    // ===== СОДЕРЖИМОЕ =====
-                    page.Content().Column(content =>
+                    page.Footer().Column(foot =>
                     {
-                        // ----- О СЕБЕ -----
-                        if (!string.IsNullOrWhiteSpace(data.About))
+                        foot.Item().LineHorizontal(0.35f).LineColor(Hairline);
+                        foot.Item().PaddingTop(6).AlignCenter().Text(t =>
                         {
-                            content.Item().Column(about =>
-                            {
-                                about.Item().Text("О СЕБЕ")
-                                    .FontSize(14)
-                                    .Bold()
-                                    .FontColor(Colors.Black);
-                                
-                                about.Item().PaddingTop(8).PaddingLeft(10).Text(data.About)
-                                    .FontSize(11);
-                                
-                                about.Item().PaddingTop(15);
-                            });
-                        }
-
-                        // ----- ОПЫТ РАБОТЫ -----
-                        if (data.WorkExperience != null && data.WorkExperience.Count > 0)
-                        {
-                            content.Item().Column(work =>
-                            {
-                                work.Item().Text("ОПЫТ РАБОТЫ")
-                                    .FontSize(14)
-                                    .Bold()
-                                    .FontColor(Colors.Black);
-
-                                foreach (var exp in data.WorkExperience)
-                                {
-                                    if (string.IsNullOrWhiteSpace(exp.Company) && 
-                                        string.IsNullOrWhiteSpace(exp.Position))
-                                        continue;
-
-                                    work.Item().PaddingTop(12).Row(row =>
-                                    {
-                                        // Левая колонка: даты
-                                        row.AutoItem().Width(120).PaddingRight(15).Column(dates =>
-                                        {
-                                            if (!string.IsNullOrWhiteSpace(exp.StartDate))
-                                            {
-                                                var start = FormatDate(exp.StartDate);
-                                                var end = exp.Current ? "настоящее время" : FormatDate(exp.EndDate);
-                                                
-                                                dates.Item().Text($"{start} — {end}")
-                                                    .FontSize(10)
-                                                    .Bold()
-                                                    .FontColor(Colors.Grey.Darken1);
-                                            }
-                                        });
-
-                                        // Правая колонка: компания и должность
-                                        row.RelativeItem().Column(details =>
-                                        {
-                                            details.Item().Text(exp.Position)
-                                                .FontSize(12)
-                                                .Bold();
-                                            
-                                            details.Item().Text(exp.Company)
-                                                .FontSize(11)
-                                                .FontColor(Colors.Grey.Darken1);
-
-                                            if (!string.IsNullOrWhiteSpace(exp.Description))
-                                            {
-                                                details.Item().PaddingTop(5).Text(exp.Description)
-                                                    .FontSize(10);
-                                            }
-                                        });
-                                    });
-                                }
-                                work.Item().PaddingTop(10);
-                            });
-                        }
-
-                        // ----- ОБРАЗОВАНИЕ -----
-                        if (data.Education != null && data.Education.Count > 0)
-                        {
-                            content.Item().PaddingTop(15).Column(edu =>
-                            {
-                                edu.Item().Text("ОБРАЗОВАНИЕ")
-                                    .FontSize(14)
-                                    .Bold()
-                                    .FontColor(Colors.Black);
-
-                                foreach (var ed in data.Education)
-                                {
-                                    if (string.IsNullOrWhiteSpace(ed.Institution))
-                                        continue;
-
-                                    edu.Item().PaddingTop(10).Row(row =>
-                                    {
-                                        // Левая колонка: даты
-                                        row.AutoItem().Width(120).PaddingRight(15).Column(dates =>
-                                        {
-                                            if (!string.IsNullOrWhiteSpace(ed.StartDate))
-                                            {
-                                                var start = FormatDate(ed.StartDate);
-                                                var end = ed.Current ? "настоящее время" : FormatDate(ed.EndDate);
-                                                
-                                                dates.Item().Text($"{start} — {end}")
-                                                    .FontSize(10)
-                                                    .Bold()
-                                                    .FontColor(Colors.Grey.Darken1);
-                                            }
-                                        });
-
-                                        // Правая колонка: учебное заведение
-                                        row.RelativeItem().Column(details =>
-                                        {
-                                            details.Item().Text(ed.Institution)
-                                                .FontSize(12)
-                                                .Bold();
-                                            
-                                            var degreeText = "";
-                                            if (!string.IsNullOrWhiteSpace(ed.Degree))
-                                                degreeText += ed.Degree;
-                                            if (!string.IsNullOrWhiteSpace(ed.Field))
-                                                degreeText += string.IsNullOrWhiteSpace(degreeText) ? ed.Field : $", {ed.Field}";
-                                            
-                                            if (!string.IsNullOrWhiteSpace(degreeText))
-                                            {
-                                                details.Item().PaddingTop(3).Text(degreeText)
-                                                    .FontSize(11)
-                                                    .FontColor(Colors.Grey.Darken1);
-                                            }
-                                        });
-                                    });
-                                }
-                                edu.Item().PaddingTop(5);
-                            });
-                        }
-
-                        // ----- НАВЫКИ -----
-                        if (data.Skills != null && data.Skills.Count > 0)
-                        {
-                            content.Item().PaddingTop(15).Column(skills =>
-                            {
-                                skills.Item().Text("НАВЫКИ")
-                                    .FontSize(14)
-                                    .Bold()
-                                    .FontColor(Colors.Black);
-
-                                // Навыки в две колонки (без иконок, просто точки)
-                                var midPoint = (int)Math.Ceiling(data.Skills.Count / 2.0);
-                                var leftSkills = data.Skills.Take(midPoint).ToList();
-                                var rightSkills = data.Skills.Skip(midPoint).ToList();
-
-                                skills.Item().PaddingTop(8).Row(row =>
-                                {
-                                    row.RelativeItem().Column(col =>
-                                    {
-                                        foreach (var skill in leftSkills)
-                                        {
-                                            col.Item().PaddingBottom(4).Text($"• {skill}")
-                                                .FontSize(11);
-                                        }
-                                    });
-
-                                    row.RelativeItem().Column(col =>
-                                    {
-                                        foreach (var skill in rightSkills)
-                                        {
-                                            col.Item().PaddingBottom(4).Text($"• {skill}")
-                                                .FontSize(11);
-                                        }
-                                    });
-                                });
-                            });
-                        }
+                            var when = data.CreatedAt != default
+                                ? data.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                : DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+                            t.Span($"Сформировано: {when}")
+                                .FontFamily(BodyFont)
+                                .FontSize(7.25f)
+                                .FontColor(Muted);
+                        });
                     });
-
-                    // НИЖНИЙ КОЛОНТИТУЛ ПОЛНОСТЬЮ УДАЛЁН
                 });
+            });
+        }
+
+        private static void SectionTitle(ColumnDescriptor column, string titleUpper)
+        {
+            column.Item().Row(r =>
+            {
+                r.ConstantItem(3.2f).Height(11).Background(Accent);
+                r.RelativeItem().PaddingLeft(8).AlignMiddle()
+                    .Text(titleUpper)
+                    .FontFamily(BodyFont)
+                    .FontSize(7.25f)
+                    .Bold()
+                    .FontColor(Muted);
+            });
+        }
+
+        private static void ContactBlock(ColumnDescriptor col, string label, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return;
+            col.Item().Background(AccentSoft).PaddingVertical(7).PaddingHorizontal(9).Column(c =>
+            {
+                c.Item().Text(label)
+                    .FontFamily(BodyFont)
+                    .FontSize(6.75f)
+                    .Bold()
+                    .FontColor(Muted);
+                c.Item().PaddingTop(3).Text(value.Trim())
+                    .FontFamily(BodyFont)
+                    .FontSize(9.35f)
+                    .SemiBold()
+                    .FontColor(Ink)
+                    .LineHeight(1.25f);
             });
         }
     }

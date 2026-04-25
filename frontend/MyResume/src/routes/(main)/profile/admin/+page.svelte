@@ -266,4 +266,40 @@
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+
+  @media (max-width: 768px) {
+    .admin-panel {
+      margin: 1rem auto;
+      padding: 1.25rem;
+      border-radius: 14px;
+    }
+
+    .admin-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .admin-title {
+      font-size: 1.45rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .admin-panel {
+      padding: 1rem;
+      margin: 0.5rem auto;
+    }
+
+    .users-table th,
+    .users-table td {
+      padding: 0.55rem 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .role-select {
+      max-width: 100%;
+      font-size: 0.8rem;
+    }
+  }
 </style>

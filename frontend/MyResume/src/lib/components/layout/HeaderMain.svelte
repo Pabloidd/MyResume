@@ -25,7 +25,7 @@
   
   <div class="nav-links">
     {#if $auth.isAuthenticated}
-      {#if $auth.user?.role !== 'user'}
+      {#if $auth.user?.role === 'premium' || $auth.user?.role === 'admin'}
         <a class="nav-link" href="{base}/search">Поиск резюме</a>
       {/if}
       <a class="nav-link" href="{base}/profile">Личный кабинет</a>
@@ -38,9 +38,9 @@
 
 <style>
 .main_page_header {
-  background-color: rgba(102, 155, 188, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background-color: var(--chrome-bg, rgba(102, 155, 188, 0.95));
+  backdrop-filter: var(--chrome-blur, blur(10px));
+  -webkit-backdrop-filter: var(--chrome-blur, blur(10px));
   display: flex;
   flex-direction: row;
   justify-content: space-between;

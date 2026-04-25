@@ -65,7 +65,7 @@
     // Role-based protection for /search
     $: if (!$auth.isLoading && $auth.isAuthenticated && $auth.user) {
         const path = $page.url.pathname;
-        if (path.startsWith('/search') && $auth.user.role === 'user') {
+        if (path.startsWith('/search') && ($auth.user.role === 'user' || $auth.user.role === 'standard')) {
             toast.error('Раздел «Поиск резюме» доступен только пользователям с Премиум-аккаунтом.');
             goto('/profile');
         }
