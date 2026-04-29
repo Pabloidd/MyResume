@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
+    import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
     let article = null;
     let loading = true;
@@ -13,6 +14,7 @@
     $: articleId = $page.params.id;
 
     onMount(async () => {
+        beginRemoteLoad();
         try {
             const response = await fetch(`${API_BASE_URL}/api/articles/${articleId}`);
 
@@ -30,6 +32,7 @@
             error = err.message;
         } finally {
             loading = false;
+            endRemoteLoad();
         }
     });
 

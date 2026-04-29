@@ -24,6 +24,7 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"pdfjs-dist": "^4.10.38",
 		"svelte-french-toast": "^1.2.0"
 	}
 }

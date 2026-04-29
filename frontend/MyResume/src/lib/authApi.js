@@ -1,3 +1,5 @@
+import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
+
 const BASE_URL = 'http://localhost:3000/api/auth';
 
 /**
@@ -16,6 +18,7 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
         options.body = JSON.stringify(body);
     }
 
+    beginRemoteLoad();
     try {
         const response = await fetch(`${BASE_URL}${endpoint}`, options);
         const data = await response.json();
@@ -28,6 +31,8 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         throw error;
+    } finally {
+        endRemoteLoad();
     }
 }
 

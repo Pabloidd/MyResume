@@ -8,6 +8,7 @@
     loadTagsByCategories,
     categoryDisplayNames
   } from '$lib/tagCategories.js';
+  import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
   let currentStep = 1;
   let totalSteps = 5;
@@ -40,6 +41,7 @@
   let selectedSkills = [];
 
   async function refreshTagsFromApi() {
+    beginRemoteLoad();
     try {
       const { tagsByCategory: byCat, categoryOrder: order, allTags: tags } =
         await loadTagsByCategories(API_BASE_URL);
@@ -48,6 +50,8 @@
       allTags = [...tags];
     } catch (err) {
       console.error('Ошибка загрузки тегов:', err);
+    } finally {
+      endRemoteLoad();
     }
   }
 
@@ -506,6 +510,7 @@
     aiLoading = true;
     aiError = '';
     aiAnswer = '';
+    beginRemoteLoad();
     try {
       const user = get(auth).user;
       const response = await fetch(`${API_BASE_URL}/api/ai/resume-consult`, {
@@ -536,6 +541,7 @@
       aiError = 'Сервис временно недоступен';
     } finally {
       aiLoading = false;
+      endRemoteLoad();
     }
   }
 
@@ -549,6 +555,7 @@
     isSubmitting = true;
     submitError = '';
 
+    beginRemoteLoad();
     try {
       const resumeData = prepareResumeData();
 
@@ -581,6 +588,7 @@
       submitError = error.message || 'Не удалось создать резюме. Попробуйте позже.';
     } finally {
       isSubmitting = false;
+      endRemoteLoad();
     }
   }
 

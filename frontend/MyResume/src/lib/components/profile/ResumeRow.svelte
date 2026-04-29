@@ -1,5 +1,6 @@
 <script>
   import toast from 'svelte-french-toast';
+  import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
   
   export let id;
   export let title;
@@ -17,6 +18,7 @@
     if (isUpdating) return;
     
     isUpdating = true;
+    beginRemoteLoad();
     try {
       const response = await fetch(`${RESUME_API_BASE}/api/resumes/${id}/toggle-status`, {
         method: 'PATCH',
@@ -32,10 +34,12 @@
       toast.error(error.message);
     } finally {
       isUpdating = false;
+      endRemoteLoad();
     }
   }
   
   async function handleDownload() {
+    beginRemoteLoad();
     try {
       const response = await fetch(`${RESUME_API_BASE}/api/resumes/${id}/download`);
       if (!response.ok) throw new Error('Ошибка при скачивании');
@@ -51,6 +55,8 @@
       document.body.removeChild(a);
     } catch (error) {
       toast.error(error.message);
+    } finally {
+      endRemoteLoad();
     }
   }
 </script>

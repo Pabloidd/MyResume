@@ -5,6 +5,7 @@
     import { auth } from '$lib/authStore';
     import ResumeRow from './ResumeRow.svelte';
     import toast from 'svelte-french-toast';
+    import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
     const RESUME_API_BASE = 'http://localhost:5052';
     
@@ -24,6 +25,7 @@
         if (!$auth.user?.email) return;
         
         isLoadingResumes = true;
+        beginRemoteLoad();
         try {
             const response = await fetch(`${RESUME_API_BASE}/api/resumes/by-email/${$auth.user.email}`);
             if (response.ok) {
@@ -35,6 +37,7 @@
             console.error('Error fetching resumes:', error);
         } finally {
             isLoadingResumes = false;
+            endRemoteLoad();
         }
     }
 

@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import toast from 'svelte-french-toast';
+  import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
   const RESUME_API_BASE = 'http://localhost:5052';
 
@@ -42,6 +43,7 @@
 
   async function loadAll() {
     loading = true;
+    beginRemoteLoad();
     try {
       const [usersRes, resumesRes, articlesRes] = await Promise.all([
         authApi.get('/admin/users'),
@@ -73,6 +75,7 @@
       toast.error('Ошибка загрузки данных');
     } finally {
       loading = false;
+      endRemoteLoad();
     }
   }
 </script>

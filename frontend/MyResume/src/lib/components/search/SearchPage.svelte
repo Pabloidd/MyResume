@@ -8,6 +8,7 @@
     loadTagsByCategories,
     categoryDisplayNames
   } from '$lib/tagCategories.js';
+  import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
   let loading = false;
   let searchResults = [];
@@ -22,6 +23,7 @@
   const API_BASE_URL = 'http://localhost:5052';
 
   async function loadTags() {
+    beginRemoteLoad();
     try {
       const { tagsByCategory: byCat, categoryOrder: order, allTags: tags } =
         await loadTagsByCategories(API_BASE_URL);
@@ -30,6 +32,8 @@
       allTags = [...tags];
     } catch (err) {
       console.error('Ошибка загрузки тегов:', err);
+    } finally {
+      endRemoteLoad();
     }
   }
 
@@ -44,6 +48,7 @@
     loading = true;
     searchPerformed = true;
 
+    beginRemoteLoad();
     try {
       const tagIdsParam = selectedTagIds.join(',');
       const response = await fetch(`${API_BASE_URL}/api/resumes/public?tagIds=${tagIdsParam}`);
@@ -59,6 +64,7 @@
       searchResults = [];
     } finally {
       loading = false;
+      endRemoteLoad();
     }
   }
 
@@ -67,6 +73,7 @@
     loading = true;
     searchPerformed = true;
 
+    beginRemoteLoad();
     try {
       const response = await fetch(`${API_BASE_URL}/api/resumes/public`);
 
@@ -81,6 +88,7 @@
       searchResults = [];
     } finally {
       loading = false;
+      endRemoteLoad();
     }
   }
 
@@ -104,6 +112,7 @@
 
   // Скачивание PDF
   async function downloadResume(resumeId, filename) {
+    beginRemoteLoad();
     try {
       const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`);
 
@@ -122,6 +131,8 @@
       }
     } catch (err) {
       console.error('Ошибка:', err);
+    } finally {
+      endRemoteLoad();
     }
   }
 
@@ -131,6 +142,7 @@
       return;
     }
 
+    beginRemoteLoad();
     try {
       const userEmail = $auth.user?.email || '';
       const userRole = $auth.user?.role || 'user';
@@ -148,6 +160,8 @@
       }
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      endRemoteLoad();
     }
   }
 

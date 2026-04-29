@@ -5,6 +5,7 @@
     import { Toaster } from 'svelte-french-toast';
     import { auth } from '$lib/authStore';
     import { authApi } from '$lib/authApi';
+    import LoadingBar from '$lib/components/LoadingBar.svelte';
     import '$lib/../app.css'; // Assuming there might be an app.css or I'll create one
 
     // Routes that don't require authentication
@@ -73,6 +74,7 @@
 </script>
 
 <Toaster />
+<LoadingBar />
 
 {#if $auth.isLoading}
     <div class="loading-screen">

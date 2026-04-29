@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { beginRemoteLoad, endRemoteLoad } from '$lib/stores/remoteLoading.js';
 
   let articles = [];
   let loading = true;
@@ -41,6 +42,7 @@
     updateSlidesToShow();
     window.addEventListener('resize', updateSlidesToShow);
 
+    beginRemoteLoad();
     try {
       const response = await fetch(`${API_BASE_URL}/api/articles/preview`);
 
@@ -61,6 +63,7 @@
       error = 'Не удалось загрузить статьи';
     } finally {
       loading = false;
+      endRemoteLoad();
     }
   });
 </script>
